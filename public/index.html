@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WP AI Admin</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4/cdn.min.js">
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<style type="text/tailwindcss">
+@theme inline {
+  --color-wp-blue: #0073aa;
+  --color-wp-dark: #23282d;
+  --color-wp-darker: #1d2327;
+  --color-wp-sidebar: #2c3338;
+  --color-wp-hover: #2ea2cc;
+  --color-wp-light: #f0f0f1;
+  --color-wp-border: #3c434a;
+  --color-accent: #AE2851;
+  --color-surface: #1e1e2e;
+  --color-surface-alt: #252536;
+  --color-text-primary: #e8eaf0;
+  --color-text-muted: #7a8194;
+  --color-success: #56d364;
+  --color-warning: #f59e0b;
+  --color-danger: #e5534b;
+}
+</style>
+</head>
+<body class="bg-[#0f1118] text-text-primary font-sans min-h-screen">
+
+<!-- App Container -->
+<div id="app" class="flex h-screen">
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="w-64 bg-surface border-r border-white/5 flex flex-col shrink-0">
+    <!-- Logo -->
+    <div class="p-4 border-b border-white/5">
+      <h1 class="text-lg font-bold">WP <span class="text-accent">AI</span> Admin</h1>
+      <p class="text-xs text-text-muted mt-0.5">WordPress + Claude + WP-CLI</p>
+    </div>
+
+    <!-- Active Site -->
+    <div class="p-4 border-b border-white/5">
+      <label class="text-xs text-text-muted uppercase tracking-wide block mb-1.5">Sitio activo</label>
+      <select id="site-select" class="w-full bg-surface-alt border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent" onchange="switchSite(this.value)">
+        <option value="">Sin sitios configurados</option>
+      </select>
+      <div id="site-status" class="flex items-center gap-1.5 mt-2 text-xs text-text-muted">
+        <span id="status-dot" class="w-2 h-2 rounded-full bg-gray-500"></span>
+        <span id="status-text">No conectado</span>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex-1 p-3 space-y-1">
+      <button onclick="showView('chat')" class="nav-btn active" data-view="chat">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+        Chat
+      </button>
+      <button onclick="showView('settings')" class="nav-btn" data-view="settings">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Settings
+      </button>
+      <button onclick="showView('history')" class="nav-btn" data-view="history">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Historial
+      </button>
+    </nav>
+
+    <!-- Claude Status -->
+    <div class="p-4 border-t border-white/5">
+      <div id="claude-status" class="flex items-center gap-2 text-xs">
+        <span id="claude-dot" class="w-2 h-2 rounded-full bg-gray-500"></span>
+        <span id="claude-text" class="text-text-muted">Claude: verificando...</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col">
+
+    <!-- CHAT VIEW -->
+    <div id="view-chat" class="flex-1 flex flex-col">
+      <!-- Messages -->
+      <div id="messages" class="flex-1 overflow-y-auto p-6 space-y-4">
+        <div class="text-center text-text-muted text-sm py-12">
+          <p class="text-2xl mb-2">&#9889;</p>
+          <p class="font-medium">Escribe algo para gestionar tu sitio WordPress</p>
+          <p class="text-xs mt-1">Ej: "lista los plugins activos", "crea un post draft", "health check"</p>
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div class="border-t border-white/5 p-4">
+        <form id="chat-form" class="flex gap-3" onsubmit="sendMessage(event)">
+          <input id="chat-input" type="text" placeholder="Escribe un mensaje..." autocomplete="off"
+            class="flex-1 bg-surface-alt border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent placeholder:text-text-muted">
+          <button type="submit" id="send-btn"
+            class="bg-accent hover:bg-accent/80 text-white px-5 py-3 rounded-xl text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+            Enviar
+          </button>
+        </form>
+        <div class="flex items-center gap-3 mt-2">
+          <button onclick="resetChat()" class="text-xs text-text-muted hover:text-text-primary transition-colors">Nueva conversacion</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS VIEW -->
+    <div id="view-settings" class="flex-1 overflow-y-auto p-6 hidden">
+      <h2 class="text-xl font-bold mb-6">Settings</h2>
+
+      <!-- API Key -->
+      <section class="bg-surface rounded-xl p-5 mb-6 border border-white/5">
+        <h3 class="text-sm font-semibold mb-3">Claude API Key</h3>
+        <div class="flex gap-3">
+          <input id="api-key-input" type="password" placeholder="sk-ant-api03-..."
+            class="flex-1 bg-surface-alt border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent">
+          <button onclick="saveApiKey()" class="bg-accent hover:bg-accent/80 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+            Guardar
+          </button>
+        </div>
+      </section>
+
+      <!-- Sites -->
+      <section class="bg-surface rounded-xl p-5 border border-white/5">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-sm font-semibold">Sitios WordPress</h3>
+          <button onclick="showAddSite()" class="bg-surface-alt hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-lg text-xs transition-colors">
+            + Anadir sitio
+          </button>
+        </div>
+
+        <!-- Add Site Form (hidden by default) -->
+        <div id="add-site-form" class="hidden mb-4 p-4 bg-surface-alt rounded-lg border border-white/10">
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label class="text-xs text-text-muted block mb-1">Nombre</label>
+              <input id="new-site-name" type="text" placeholder="Mi sitio" class="w-full bg-[#0f1118] border border-white/10 rounded px-2.5 py-1.5 text-sm">
+            </div>
+            <div>
+              <label class="text-xs text-text-muted block mb-1">Tipo</label>
+              <select id="new-site-type" class="w-full bg-[#0f1118] border border-white/10 rounded px-2.5 py-1.5 text-sm">
+                <option value="local">Local (MAMP/path)</option>
+                <option value="remote">Remoto (SSH)</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="text-xs text-text-muted block mb-1">Path WP-CLI (--path)</label>
+            <input id="new-site-path" type="text" placeholder="/Volumes/Disco SSD/MAMP/mi-sitio/" class="w-full bg-[#0f1118] border border-white/10 rounded px-2.5 py-1.5 text-sm">
+          </div>
+          <div id="ssh-fields" class="hidden grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label class="text-xs text-text-muted block mb-1">SSH Host</label>
+              <input id="new-site-ssh-host" type="text" placeholder="192.168.1.1" class="w-full bg-[#0f1118] border border-white/10 rounded px-2.5 py-1.5 text-sm">
+            </div>
+            <div>
+              <label class="text-xs text-text-muted block mb-1">SSH User</label>
+              <input id="new-site-ssh-user" type="text" placeholder="root" class="w-full bg-[#0f1118] border border-white/10 rounded px-2.5 py-1.5 text-sm">
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="addSite()" class="bg-accent text-white px-3 py-1.5 rounded text-xs">Guardar</button>
+            <button onclick="hideAddSite()" class="text-text-muted hover:text-text-primary px-3 py-1.5 text-xs">Cancelar</button>
+          </div>
+        </div>
+
+        <!-- Sites List -->
+        <div id="sites-list" class="space-y-2">
+          <p class="text-text-muted text-sm">No hay sitios configurados.</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- HISTORY VIEW -->
+    <div id="view-history" class="flex-1 overflow-y-auto p-6 hidden">
+      <h2 class="text-xl font-bold mb-6">Historial de comandos</h2>
+      <div id="history-list" class="space-y-2">
+        <p class="text-text-muted text-sm">Sin historial.</p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<style>
+  .nav-btn {
+    @apply w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-text-muted hover:text-text-primary hover:bg-white/5 transition-colors;
+  }
+  .nav-btn.active {
+    @apply text-text-primary bg-white/5;
+  }
+  .msg-user {
+    @apply ml-auto max-w-[70%] bg-accent/20 border border-accent/30 rounded-2xl rounded-br-md px-4 py-2.5 text-sm;
+  }
+  .msg-assistant {
+    @apply mr-auto max-w-[80%] bg-surface border border-white/5 rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed;
+  }
+  .msg-tool {
+    @apply mr-auto max-w-[80%] bg-surface-alt border border-white/8 rounded-lg px-3 py-2 text-xs font-mono;
+  }
+  .msg-tool .tool-name { @apply text-accent font-semibold; }
+  .msg-tool .tool-cmd { @apply text-text-muted mt-1 break-all; }
+  .msg-tool .tool-output { @apply text-success/80 mt-1 max-h-32 overflow-y-auto whitespace-pre-wrap; }
+  .msg-tool .tool-error { @apply text-danger mt-1; }
+  .site-card {
+    @apply flex items-center justify-between p-3 bg-surface-alt rounded-lg border border-white/5;
+  }
+  .site-card.active-site {
+    @apply border-accent/40;
+  }
+  @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .thinking { animation: pulse-dot 1.5s infinite; }
+</style>
+
+<script src="app.js"></script>
+</body>
+</html>

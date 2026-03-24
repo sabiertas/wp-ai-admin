@@ -1,0 +1,13 @@
+{
+  "sites": [
+    {
+      "id": "local-dev",
+      "name": "Dev Local (MAMP)",
+      "type": "local",
+      "path": "/Volumes/Disco SSD/MAMP/dev-site/",
+      "ssh_host": "",
+      "ssh_user": "",
+      "active": true
+    }
+  ]
+}
