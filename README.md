@@ -11,7 +11,7 @@ WP AI Admin is a local web application that lets you manage any WordPress site t
 - **Natural language WordPress management** — "list active plugins", "create a draft post about SEO", "do a health check"
 - **29 pre-built WP-CLI tools** + a generic `wp_cli_run` that executes ANY WP-CLI command
 - **13 WordPress Agent Skills** from the [official WordPress repo](https://github.com/WordPress/agent-skills) — auto-loaded by context
-- **20 ready-to-use Workflows** — multi-step recipes: security audit, performance review, DB cleanup, domain migration, and more
+- **21 ready-to-use Workflows** — multi-step recipes: security audit, performance review, DB cleanup, domain migration, WindPress/Tailwind debug, and more
 - **Multi-site management** — add local (MAMP) or remote (SSH) WordPress sites
 - **Command history** — full log of every WP-CLI command executed
 - **Installable as PWA** — use it as a desktop app
@@ -20,7 +20,7 @@ WP AI Admin is a local web application that lets you manage any WordPress site t
 ## Quick Start
 
 ```bash
-git clone https://github.com/AJJulian/wp-ai-admin.git
+git clone https://github.com/sabiertas/wp-ai-admin.git
 cd wp-ai-admin
 bash setup.sh
 npm start
@@ -81,8 +81,8 @@ The app includes all 13 official skills from [WordPress/agent-skills](https://gi
 | Skill | Loaded when... |
 |---|---|
 | `wp-wpcli-and-ops` | Any WP-CLI operation (always as base) |
-| `wp-performance` | Performance, speed, optimization topics |
-| `wp-plugin-development` | Plugin scaffolding, hooks, architecture |
+| `wp-performance` | Performance, speed, optimization, CSS/Tailwind/WindPress |
+| `wp-plugin-development` | Plugin scaffolding, hooks, architecture, WindPress/Tailwind config |
 | `wp-block-development` | Gutenberg blocks, block.json |
 | `wp-block-themes` | theme.json, FSE, templates |
 | `wp-rest-api` | REST endpoints, API routes |
@@ -99,7 +99,7 @@ Skills are loaded **automatically** based on what you ask — no configuration n
 Ask anything — Claude executes the right WP-CLI commands and explains the results.
 
 ### Workflows
-20 pre-built multi-step recipes. Create your own from the UI.
+21 pre-built multi-step recipes including WindPress/Tailwind debugging (v3/v4 detection). Create your own from the UI.
 
 ### Settings
 Manage API key and WordPress sites (local MAMP or remote SSH).
