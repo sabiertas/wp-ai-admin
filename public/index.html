@@ -2,182 +2,303 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>WP AI Admin</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4/cdn.min.js">
+<meta name="description" content="Gestiona WordPress con IA — Claude + WP-CLI">
+<meta name="theme-color" content="#f97f0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WP AI Admin">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="apple-touch-icon" href="icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 <style type="text/tailwindcss">
 @theme inline {
-  --color-wp-blue: #0073aa;
-  --color-wp-dark: #23282d;
-  --color-wp-darker: #1d2327;
-  --color-wp-sidebar: #2c3338;
-  --color-wp-hover: #2ea2cc;
-  --color-wp-light: #f0f0f1;
-  --color-wp-border: #3c434a;
-  --color-accent: #AE2851;
-  --color-surface: #1e1e2e;
-  --color-surface-alt: #252536;
-  --color-text-primary: #e8eaf0;
-  --color-text-muted: #7a8194;
-  --color-success: #56d364;
-  --color-warning: #f59e0b;
-  --color-danger: #e5534b;
+  --color-amber-50: #fff8ed;
+  --color-amber-100: #ffefd4;
+  --color-amber-200: #ffdba8;
+  --color-amber-300: #ffc170;
+  --color-amber-400: #ff9d36;
+  --color-amber-500: #f97f0f;
+  --color-amber-600: #ea6505;
+  --color-amber-700: #c24b06;
+  --color-amber-800: #9a3b0e;
+  --color-amber-900: #7c320f;
+  --color-amber-950: #431705;
+
+  --color-surface: #18181b;
+  --color-surface-alt: #1f1f23;
+  --color-surface-hover: #27272b;
+  --color-sidebar: #111113;
+  --color-sidebar-hover: #1c1c1f;
+  --color-text-primary: #fafaf9;
+  --color-text-muted: #8a8a97;
+  --color-border: #2a2a2e;
+  --color-success: #4ade80;
+  --color-warning: #fbbf24;
+  --color-danger: #f87171;
 }
 </style>
 </head>
-<body class="bg-[#0f1118] text-text-primary font-sans min-h-screen">
+<body class="bg-surface text-text-primary font-[system-ui,-apple-system,sans-serif] min-h-screen antialiased text-base">
 
 <!-- App Container -->
 <div id="app" class="flex h-screen">
 
   <!-- Sidebar -->
-  <aside id="sidebar" class="w-64 bg-surface border-r border-white/5 flex flex-col shrink-0">
-    <!-- Logo -->
-    <div class="p-4 border-b border-white/5">
-      <h1 class="text-lg font-bold">WP <span class="text-accent">AI</span> Admin</h1>
-      <p class="text-xs text-text-muted mt-0.5">WordPress + Claude + WP-CLI</p>
-    </div>
+  <aside id="sidebar" class="w-[272px] bg-sidebar flex flex-col shrink-0 border-r border-border">
 
-    <!-- Active Site -->
-    <div class="p-4 border-b border-white/5">
-      <label class="text-xs text-text-muted uppercase tracking-wide block mb-1.5">Sitio activo</label>
-      <select id="site-select" class="w-full bg-surface-alt border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent" onchange="switchSite(this.value)">
-        <option value="">Sin sitios configurados</option>
-      </select>
-      <div id="site-status" class="flex items-center gap-1.5 mt-2 text-xs text-text-muted">
-        <span id="status-dot" class="w-2 h-2 rounded-full bg-gray-500"></span>
-        <span id="status-text">No conectado</span>
+    <!-- Logo -->
+    <div class="px-5 pt-5 pb-4">
+      <div class="flex items-center gap-2.5">
+        <img src="logo.svg" alt="WP AI Admin" class="w-8 h-8 rounded-lg shadow-lg shadow-amber-500/20">
+        <div>
+          <h1 class="text-[15px] font-semibold tracking-tight">WP AI Admin</h1>
+          <p class="text-[11px] text-text-muted leading-none mt-0.5">Claude + WP-CLI</p>
+        </div>
       </div>
     </div>
 
+    <!-- Active Site Selector -->
+    <div class="px-4 pb-4">
+      <div class="bg-surface-alt rounded-xl p-3 border border-border">
+        <label class="text-[10px] text-text-muted uppercase tracking-widest font-medium block mb-2">Sitio activo</label>
+        <select id="site-select" class="w-full bg-sidebar border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 appearance-none cursor-pointer" onchange="switchSite(this.value)">
+          <option value="">Sin sitios configurados</option>
+        </select>
+        <div id="site-status" class="flex items-center gap-2 mt-2.5 text-xs">
+          <span id="status-dot" class="w-2 h-2 rounded-full bg-text-muted/40"></span>
+          <span id="status-text" class="text-text-muted">No conectado</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Separator -->
+    <div class="px-4"><div class="border-t border-border"></div></div>
+
     <!-- Nav -->
-    <nav class="flex-1 p-3 space-y-1">
-      <button onclick="showView('chat')" class="nav-btn active" data-view="chat">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-        Chat
+    <nav class="flex-1 flex flex-col gap-1 px-3 py-4">
+      <button onclick="showView('chat')" class="nav-btn active w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] transition-all duration-150" data-view="chat">
+        <svg class="w-[18px] h-[18px] shrink-0 opacity-70" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155"/></svg>
+        <span>Chat</span>
       </button>
-      <button onclick="showView('settings')" class="nav-btn" data-view="settings">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        Settings
+      <button onclick="showView('settings')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] transition-all duration-150" data-view="settings">
+        <svg class="w-[18px] h-[18px] shrink-0 opacity-70" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 010-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span>Settings</span>
       </button>
-      <button onclick="showView('history')" class="nav-btn" data-view="history">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        Historial
+      <button onclick="showView('workflows')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] transition-all duration-150" data-view="workflows">
+        <svg class="w-[18px] h-[18px] shrink-0 opacity-70" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>
+        <span>Workflows</span>
+      </button>
+      <button onclick="showView('history')" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] transition-all duration-150" data-view="history">
+        <svg class="w-[18px] h-[18px] shrink-0 opacity-70" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span>Historial</span>
       </button>
     </nav>
 
-    <!-- Claude Status -->
-    <div class="p-4 border-t border-white/5">
-      <div id="claude-status" class="flex items-center gap-2 text-xs">
-        <span id="claude-dot" class="w-2 h-2 rounded-full bg-gray-500"></span>
-        <span id="claude-text" class="text-text-muted">Claude: verificando...</span>
+    <!-- Quick Actions -->
+    <div id="sidebar-workflows" class="px-3 pb-2 flex flex-col gap-0.5">
+      <p class="text-[10px] text-text-muted uppercase tracking-widest font-medium px-3 mb-1.5">Workflows</p>
+      <!-- Populated by JS -->
+    </div>
+
+    <!-- Separator -->
+    <div class="px-4"><div class="border-t border-border"></div></div>
+
+    <!-- Claude Status Footer -->
+    <div class="px-5 py-4">
+      <div id="claude-status" class="flex items-center gap-2.5">
+        <span id="claude-dot" class="w-2 h-2 rounded-full bg-text-muted/40 shrink-0"></span>
+        <span id="claude-text" class="text-[12px] text-text-muted">Claude: verificando...</span>
       </div>
     </div>
   </aside>
 
   <!-- Main Content -->
-  <main class="flex-1 flex flex-col">
+  <main class="flex-1 flex flex-col min-w-0">
 
     <!-- CHAT VIEW -->
     <div id="view-chat" class="flex-1 flex flex-col">
       <!-- Messages -->
-      <div id="messages" class="flex-1 overflow-y-auto p-6 space-y-4">
-        <div class="text-center text-text-muted text-sm py-12">
-          <p class="text-2xl mb-2">&#9889;</p>
-          <p class="font-medium">Escribe algo para gestionar tu sitio WordPress</p>
-          <p class="text-xs mt-1">Ej: "lista los plugins activos", "crea un post draft", "health check"</p>
+      <div id="messages" class="flex-1 overflow-y-auto px-6 py-8 space-y-4">
+        <div class="flex flex-col items-center justify-center text-center text-text-muted py-20">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-700/10 border border-amber-500/20 flex items-center justify-center mb-5">
+            <svg class="w-7 h-7 text-amber-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z"/></svg>
+          </div>
+          <p class="font-medium text-text-primary text-[15px]">Gestiona tu WordPress con lenguaje natural</p>
+          <p class="text-[13px] mt-2 max-w-sm leading-relaxed">Escribe lo que necesites: "lista plugins activos", "health check", "crea un post draft"...</p>
         </div>
       </div>
 
-      <!-- Input -->
-      <div class="border-t border-white/5 p-4">
-        <form id="chat-form" class="flex gap-3" onsubmit="sendMessage(event)">
+      <!-- Input Bar -->
+      <div class="border-t border-border bg-sidebar/50 p-4">
+        <form id="chat-form" class="flex gap-3 max-w-3xl mx-auto" onsubmit="sendMessage(event)">
           <input id="chat-input" type="text" placeholder="Escribe un mensaje..." autocomplete="off"
-            class="flex-1 bg-surface-alt border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent placeholder:text-text-muted">
+            class="flex-1 bg-surface border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/40 placeholder:text-text-muted/60 transition-all">
           <button type="submit" id="send-btn"
-            class="bg-accent hover:bg-accent/80 text-white px-5 py-3 rounded-xl text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+            class="bg-amber-600 hover:bg-amber-500 text-white px-5 py-3 rounded-xl text-sm font-medium transition-all shadow-lg shadow-amber-600/20 hover:shadow-amber-500/30 disabled:opacity-30 disabled:cursor-not-allowed disabled:shadow-none">
             Enviar
           </button>
         </form>
-        <div class="flex items-center gap-3 mt-2">
-          <button onclick="resetChat()" class="text-xs text-text-muted hover:text-text-primary transition-colors">Nueva conversacion</button>
+        <div class="flex items-center gap-3 mt-2 max-w-3xl mx-auto">
+          <button onclick="resetChat()" class="text-[11px] text-text-muted hover:text-amber-400 transition-colors">Nueva conversacion</button>
         </div>
       </div>
     </div>
 
     <!-- SETTINGS VIEW -->
-    <div id="view-settings" class="flex-1 overflow-y-auto p-6 hidden">
-      <h2 class="text-xl font-bold mb-6">Settings</h2>
+    <div id="view-settings" class="flex-1 overflow-y-auto px-6 py-8 hidden">
+      <div class="max-w-2xl">
+        <h2 class="text-xl font-semibold mb-6">Settings</h2>
 
-      <!-- API Key -->
-      <section class="bg-surface rounded-xl p-5 mb-6 border border-white/5">
-        <h3 class="text-sm font-semibold mb-3">Claude API Key</h3>
-        <div class="flex gap-3">
-          <input id="api-key-input" type="password" placeholder="sk-ant-api03-..."
-            class="flex-1 bg-surface-alt border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent">
-          <button onclick="saveApiKey()" class="bg-accent hover:bg-accent/80 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-            Guardar
-          </button>
-        </div>
-      </section>
+        <!-- API Key -->
+        <section class="bg-surface-alt rounded-xl p-5 mb-5 border border-border">
+          <h3 class="text-sm font-medium mb-3 flex items-center gap-2">
+            <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"/></svg>
+            Claude API Key
+          </h3>
+          <div class="flex gap-3">
+            <input id="api-key-input" type="password" placeholder="sk-ant-api03-..."
+              class="flex-1 bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/40">
+            <button onclick="saveApiKey()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-all shadow-lg shadow-amber-600/15">
+              Guardar
+            </button>
+          </div>
+        </section>
 
-      <!-- Sites -->
-      <section class="bg-surface rounded-xl p-5 border border-white/5">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-sm font-semibold">Sitios WordPress</h3>
-          <button onclick="showAddSite()" class="bg-surface-alt hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-lg text-xs transition-colors">
-            + Anadir sitio
-          </button>
-        </div>
+        <!-- Sites -->
+        <section class="bg-surface-alt rounded-xl p-5 border border-border">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-sm font-medium flex items-center gap-2">
+              <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 14.25h13.5m-13.5 0a3 3 0 01-3-3m3 3a3 3 0 100 6h13.5a3 3 0 100-6m-16.5-3a3 3 0 013-3h13.5a3 3 0 013 3m-19.5 0a4.5 4.5 0 01.9-2.7L5.737 5.1a3.375 3.375 0 012.7-1.35h7.126c1.062 0 2.062.5 2.7 1.35l2.587 3.45a4.5 4.5 0 01.9 2.7m0 0a3 3 0 01-3 3m0 3h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008zm-3 6h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008z"/></svg>
+              Sitios WordPress
+            </h3>
+            <button onclick="showAddSite()" class="bg-amber-600/10 hover:bg-amber-600/20 text-amber-400 border border-amber-500/20 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
+              + Anadir sitio
+            </button>
+          </div>
 
-        <!-- Add Site Form (hidden by default) -->
-        <div id="add-site-form" class="hidden mb-4 p-4 bg-surface-alt rounded-lg border border-white/10">
-          <div class="grid grid-cols-2 gap-3 mb-3">
-            <div>
-              <label class="text-xs text-text-muted block mb-1">Nombre</label>
-              <input id="new-site-name" type="text" placeholder="Mi sitio" class="w-full bg-[#0f1118] border border-white/10 rounded px-2.5 py-1.5 text-sm">
+          <!-- Add Site Form (hidden by default) -->
+          <div id="add-site-form" class="hidden mb-4 p-4 bg-sidebar rounded-lg border border-border">
+            <div class="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label class="text-[11px] text-text-muted block mb-1 font-medium">Nombre</label>
+                <input id="new-site-name" type="text" placeholder="Mi sitio" class="w-full bg-surface border border-border rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/50">
+              </div>
+              <div>
+                <label class="text-[11px] text-text-muted block mb-1 font-medium">Tipo</label>
+                <select id="new-site-type" class="w-full bg-surface border border-border rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/50">
+                  <option value="local">Local (MAMP/path)</option>
+                  <option value="remote">Remoto (SSH)</option>
+                </select>
+              </div>
             </div>
-            <div>
-              <label class="text-xs text-text-muted block mb-1">Tipo</label>
-              <select id="new-site-type" class="w-full bg-[#0f1118] border border-white/10 rounded px-2.5 py-1.5 text-sm">
-                <option value="local">Local (MAMP/path)</option>
-                <option value="remote">Remoto (SSH)</option>
-              </select>
+            <div class="mb-3">
+              <label class="text-[11px] text-text-muted block mb-1 font-medium">Path WP-CLI (--path)</label>
+              <input id="new-site-path" type="text" placeholder="/Volumes/Disco SSD/MAMP/mi-sitio/" class="w-full bg-surface border border-border rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/50">
+            </div>
+            <div id="ssh-fields" class="hidden grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label class="text-[11px] text-text-muted block mb-1 font-medium">SSH Host</label>
+                <input id="new-site-ssh-host" type="text" placeholder="192.168.1.1" class="w-full bg-surface border border-border rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/50">
+              </div>
+              <div>
+                <label class="text-[11px] text-text-muted block mb-1 font-medium">SSH User</label>
+                <input id="new-site-ssh-user" type="text" placeholder="root" class="w-full bg-surface border border-border rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/50">
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="addSite()" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">Guardar</button>
+              <button onclick="hideAddSite()" class="text-text-muted hover:text-text-primary px-3 py-1.5 text-xs transition-colors">Cancelar</button>
             </div>
           </div>
-          <div class="mb-3">
-            <label class="text-xs text-text-muted block mb-1">Path WP-CLI (--path)</label>
-            <input id="new-site-path" type="text" placeholder="/Volumes/Disco SSD/MAMP/mi-sitio/" class="w-full bg-[#0f1118] border border-white/10 rounded px-2.5 py-1.5 text-sm">
-          </div>
-          <div id="ssh-fields" class="hidden grid grid-cols-2 gap-3 mb-3">
-            <div>
-              <label class="text-xs text-text-muted block mb-1">SSH Host</label>
-              <input id="new-site-ssh-host" type="text" placeholder="192.168.1.1" class="w-full bg-[#0f1118] border border-white/10 rounded px-2.5 py-1.5 text-sm">
-            </div>
-            <div>
-              <label class="text-xs text-text-muted block mb-1">SSH User</label>
-              <input id="new-site-ssh-user" type="text" placeholder="root" class="w-full bg-[#0f1118] border border-white/10 rounded px-2.5 py-1.5 text-sm">
-            </div>
-          </div>
-          <div class="flex gap-2">
-            <button onclick="addSite()" class="bg-accent text-white px-3 py-1.5 rounded text-xs">Guardar</button>
-            <button onclick="hideAddSite()" class="text-text-muted hover:text-text-primary px-3 py-1.5 text-xs">Cancelar</button>
-          </div>
-        </div>
 
-        <!-- Sites List -->
-        <div id="sites-list" class="space-y-2">
-          <p class="text-text-muted text-sm">No hay sitios configurados.</p>
-        </div>
-      </section>
+          <!-- Sites List -->
+          <div id="sites-list" class="space-y-2">
+            <p class="text-text-muted text-sm">No hay sitios configurados.</p>
+          </div>
+        </section>
+      </div>
     </div>
 
     <!-- HISTORY VIEW -->
-    <div id="view-history" class="flex-1 overflow-y-auto p-6 hidden">
-      <h2 class="text-xl font-bold mb-6">Historial de comandos</h2>
-      <div id="history-list" class="space-y-2">
-        <p class="text-text-muted text-sm">Sin historial.</p>
+    <div id="view-history" class="flex-1 overflow-y-auto px-6 py-8 hidden">
+      <div class="max-w-2xl">
+        <h2 class="text-xl font-semibold mb-6">Historial de comandos</h2>
+        <div id="history-list" class="space-y-2">
+          <p class="text-text-muted text-sm">Sin historial.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SKILLS VIEW -->
+    <div id="view-workflows" class="flex-1 overflow-y-auto px-6 py-8 hidden">
+      <div class="max-w-3xl">
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h2 class="text-xl font-semibold">Workflows</h2>
+            <p class="text-sm text-text-muted mt-1">Recetas automatizadas reutilizables para cualquier sitio conectado</p>
+          </div>
+          <button onclick="showCreateSkill()" class="bg-amber-600/10 hover:bg-amber-600/20 text-amber-400 border border-amber-500/20 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
+            + Crear workflow
+          </button>
+        </div>
+
+        <!-- Category filters -->
+        <div id="skill-filters" class="flex gap-2 mb-5 flex-wrap">
+          <button onclick="filterSkills('all')" class="skill-filter active text-xs px-3 py-1.5 rounded-lg border transition-colors" data-cat="all">Todas</button>
+        </div>
+
+        <!-- Skills grid -->
+        <div id="skills-grid" class="grid grid-cols-1 gap-3">
+          <p class="text-text-muted text-sm">Cargando skills...</p>
+        </div>
+
+        <!-- Create/Edit Skill Form (hidden) -->
+        <div id="skill-form" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div class="bg-surface-alt rounded-2xl border border-border p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <h3 class="text-lg font-semibold mb-4" id="skill-form-title">Crear Workflow</h3>
+            <input type="hidden" id="skill-edit-id">
+            <div class="space-y-3">
+              <div class="grid grid-cols-[1fr_80px] gap-3">
+                <div>
+                  <label class="text-[11px] text-text-muted block mb-1 font-medium">Nombre</label>
+                  <input id="skill-name" type="text" placeholder="Mi skill custom" class="w-full bg-sidebar border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/50">
+                </div>
+                <div>
+                  <label class="text-[11px] text-text-muted block mb-1 font-medium">Icono</label>
+                  <input id="skill-icon" type="text" placeholder="🔧" maxlength="4" class="w-full bg-sidebar border border-border rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-amber-500/50">
+                </div>
+              </div>
+              <div>
+                <label class="text-[11px] text-text-muted block mb-1 font-medium">Categoria</label>
+                <select id="skill-category" class="w-full bg-sidebar border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/50">
+                  <option value="security">Seguridad</option>
+                  <option value="performance">Rendimiento</option>
+                  <option value="maintenance">Mantenimiento</option>
+                  <option value="content">Contenido</option>
+                  <option value="seo">SEO</option>
+                  <option value="woocommerce">WooCommerce</option>
+                  <option value="development">Desarrollo</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-[11px] text-text-muted block mb-1 font-medium">Descripcion</label>
+                <input id="skill-description" type="text" placeholder="Que hace este skill..." class="w-full bg-sidebar border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/50">
+              </div>
+              <div>
+                <label class="text-[11px] text-text-muted block mb-1 font-medium">Prompt (instrucciones para Claude)</label>
+                <textarea id="skill-prompt" rows="8" placeholder="Instrucciones paso a paso que Claude seguira..." class="w-full bg-sidebar border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/50 resize-y"></textarea>
+              </div>
+            </div>
+            <div class="flex gap-2 mt-4">
+              <button onclick="saveSkill()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">Guardar</button>
+              <button onclick="hideSkillForm()" class="text-text-muted hover:text-text-primary px-4 py-2 text-sm transition-colors">Cancelar</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -185,35 +306,78 @@
 </div>
 
 <style>
-  .nav-btn {
-    @apply w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-text-muted hover:text-text-primary hover:bg-white/5 transition-colors;
-  }
-  .nav-btn.active {
-    @apply text-text-primary bg-white/5;
-  }
+  /* Nav buttons */
+  .nav-btn { color: #8a8a97; cursor: pointer; border: 1px solid transparent; }
+  .nav-btn:hover { color: #fafaf9; background: #1c1c1f; }
+  .nav-btn.active { color: #fafaf9; background: #1f1f23; border-color: #2a2a2e; }
+
+  /* Message bubbles */
   .msg-user {
-    @apply ml-auto max-w-[70%] bg-accent/20 border border-accent/30 rounded-2xl rounded-br-md px-4 py-2.5 text-sm;
+    margin-left: auto; max-width: 70%;
+    background: rgba(234,101,5,0.1); border: 1px solid rgba(249,127,15,0.15);
+    border-radius: 1rem; border-bottom-right-radius: 0.375rem;
+    padding: 0.75rem 1rem; font-size: 0.875rem;
   }
   .msg-assistant {
-    @apply mr-auto max-w-[80%] bg-surface border border-white/5 rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed;
+    margin-right: auto; max-width: 80%;
+    background: #1f1f23; border: 1px solid #2a2a2e;
+    border-radius: 1rem; border-bottom-left-radius: 0.375rem;
+    padding: 0.75rem 1rem; font-size: 0.875rem; line-height: 1.625;
   }
   .msg-tool {
-    @apply mr-auto max-w-[80%] bg-surface-alt border border-white/8 rounded-lg px-3 py-2 text-xs font-mono;
+    margin-right: auto; max-width: 80%;
+    background: #111113; border: 1px solid #2a2a2e;
+    border-radius: 0.75rem; padding: 0.625rem 0.875rem;
+    font-size: 0.75rem; font-family: ui-monospace, monospace;
   }
-  .msg-tool .tool-name { @apply text-accent font-semibold; }
-  .msg-tool .tool-cmd { @apply text-text-muted mt-1 break-all; }
-  .msg-tool .tool-output { @apply text-success/80 mt-1 max-h-32 overflow-y-auto whitespace-pre-wrap; }
-  .msg-tool .tool-error { @apply text-danger mt-1; }
+  .msg-tool .tool-name { color: #ff9d36; font-weight: 600; }
+  .msg-tool .tool-cmd { color: #8a8a97; margin-top: 0.25rem; word-break: break-all; }
+  .msg-tool .tool-output { color: rgba(74,222,128,0.8); margin-top: 0.375rem; max-height: 8rem; overflow-y: auto; white-space: pre-wrap; }
+  .msg-tool .tool-error { color: #f87171; margin-top: 0.25rem; }
+
+  /* Site cards */
   .site-card {
-    @apply flex items-center justify-between p-3 bg-surface-alt rounded-lg border border-white/5;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.875rem; background: #111113;
+    border-radius: 0.75rem; border: 1px solid #2a2a2e;
   }
   .site-card.active-site {
-    @apply border-accent/40;
+    border-color: rgba(249,127,15,0.3); background: rgba(249,127,15,0.05);
   }
-  @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
-  .thinking { animation: pulse-dot 1.5s infinite; }
+
+  /* Skill cards */
+  .skill-card {
+    display: flex; align-items: flex-start; gap: 1rem;
+    padding: 1rem 1.25rem; background: #1f1f23;
+    border-radius: 0.75rem; border: 1px solid #2a2a2e;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .skill-card:hover { border-color: rgba(249,127,15,0.3); background: rgba(249,127,15,0.03); }
+  .skill-card .skill-icon { font-size: 1.5rem; line-height: 1; flex-shrink: 0; margin-top: 2px; }
+  .skill-card .skill-name { font-size: 0.875rem; font-weight: 600; }
+  .skill-card .skill-desc { font-size: 0.75rem; color: #8a8a97; margin-top: 0.25rem; line-height: 1.4; }
+  .skill-card .skill-cat {
+    font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.05em;
+    color: #ff9d36; background: rgba(249,127,15,0.1); padding: 0.125rem 0.5rem;
+    border-radius: 0.375rem; margin-top: 0.5rem; display: inline-block;
+  }
+  .skill-card .skill-actions { margin-left: auto; display: flex; gap: 0.25rem; flex-shrink: 0; }
+
+  /* Skill filters */
+  .skill-filter { border-color: #2a2a2e; color: #8a8a97; background: transparent; cursor: pointer; }
+  .skill-filter:hover { color: #fafaf9; border-color: #3a3a3e; }
+  .skill-filter.active { color: #ff9d36; border-color: rgba(249,127,15,0.3); background: rgba(249,127,15,0.05); }
+
+  /* Animations */
+  @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .thinking { animation: pulse-dot 1.5s ease-in-out infinite; }
 </style>
 
 <script src="app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+</script>
 </body>
 </html>

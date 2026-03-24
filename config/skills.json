@@ -1,0 +1,164 @@
+{
+  "skills": [
+    {
+      "id": "security-audit",
+      "name": "Auditoría de Seguridad",
+      "icon": "🔒",
+      "description": "Inspección completa de seguridad: versión WP, usuarios admin sospechosos, plugins desactualizados, debug mode, file editing, DB prefix, application passwords.",
+      "prompt": "Haz una auditoría de seguridad completa siguiendo esta checklist profesional:\n\n1. **Core**: versión de WordPress, compara con la última estable\n2. **Usuarios admin**: lista todos los administrators. Busca emails genéricos (admin@, test@, info@) o logins sospechosos\n3. **Plugins inactivos**: son superficie de ataque, listarlos\n4. **Plugins desactualizados**: lista los que tienen update disponible\n5. **Debug mode**: verifica WP_DEBUG, WP_DEBUG_LOG, WP_DEBUG_DISPLAY (deben estar OFF en producción)\n6. **File editing**: verifica DISALLOW_FILE_EDIT (debe estar habilitado)\n7. **DB prefix**: verifica si es 'wp_' (inseguro por defecto) o custom\n8. **Application passwords**: lista si hay app passwords activos con wp eval\n9. **Permisos de archivos**: verifica wp-config.php permissions\n10. **Versión de PHP**: verifica que sea >= 8.0\n\nGenera un informe con:\n- Puntuación de seguridad (1-10)\n- Issues CRÍTICOS (rojos) — requieren acción inmediata\n- Issues MODERADOS (amarillos) — recomendados\n- Items OK (verdes)\n- Plan de acción priorizado",
+      "category": "security"
+    },
+    {
+      "id": "performance-review",
+      "name": "Review de Rendimiento",
+      "icon": "⚡",
+      "description": "Análisis profundo: tamaño DB por tabla, autoloaded options, transients, cron acumulado, revisiones, queries lentos.",
+      "prompt": "Analiza el rendimiento de este sitio con esta checklist profesional:\n\n1. **Tamaño de DB**: ejecuta wp db size --tables --format=json. Identifica tablas grandes\n2. **Autoloaded options**: ejecuta wp eval \"$size = $wpdb->get_var(\\\"SELECT SUM(LENGTH(option_value)) FROM {$wpdb->options} WHERE autoload='yes'\\\"); $count = $wpdb->get_var(\\\"SELECT COUNT(*) FROM {$wpdb->options} WHERE autoload='yes'\\\"); echo json_encode(['size_bytes' => (int)$size, 'count' => (int)$count]);\"\n3. **Opciones autoload grandes**: ejecuta wp eval \"$rows = $wpdb->get_results(\\\"SELECT option_name, LENGTH(option_value) as size FROM {$wpdb->options} WHERE autoload='yes' ORDER BY size DESC LIMIT 15\\\"); echo json_encode($rows);\"\n4. **Transients**: cuenta total y expirados\n5. **Cron events**: lista crons, busca acumulación de eventos duplicados\n6. **Revisiones de posts**: cuenta total (post_type=revision)\n7. **Posts en trash**: cuenta y recomienda limpiar\n8. **Plugins activos**: cuenta total (más de 20 es warning, más de 30 es critical)\n9. **Object cache**: verifica si hay persistent object cache configurado\n\nGenera informe con:\n- Puntuación de rendimiento (1-10)\n- Ahorro potencial estimado en MB si se limpia\n- Top 5 acciones de mayor impacto, ordenadas\n- Comandos exactos para ejecutar cada optimización",
+      "category": "performance"
+    },
+    {
+      "id": "db-cleanup",
+      "name": "Limpieza de Base de Datos",
+      "icon": "🧹",
+      "description": "Limpia revisiones, trash, spam, transients expirados, opciones huérfanas y optimiza tablas. Con preview antes de ejecutar.",
+      "prompt": "Limpia la base de datos de forma segura. SIEMPRE muestra preview antes de ejecutar.\n\n**FASE 1 — Diagnóstico** (solo lectura):\n1. Tamaño actual de la DB\n2. Cuenta revisiones: wp post list --post_type=revision --format=count\n3. Cuenta posts en trash: wp post list --post_status=trash --format=count\n4. Cuenta comentarios spam: wp comment list --status=spam --format=count\n5. Cuenta transients expirados\n6. Cuenta opciones autoloaded que no deberian serlo\n\n**MUESTRA EL RESUMEN y ESPERA confirmación del usuario.** No ejecutes nada destructivo sin confirmación.\n\n**FASE 2 — Limpieza** (solo tras confirmación):\n1. Backup previo: wp db export con timestamp\n2. Eliminar revisiones (wp post delete $(wp post list --post_type=revision --format=ids) --force)\n3. Vaciar papelera\n4. Eliminar spam\n5. Limpiar transients expirados: wp transient delete --expired\n6. Optimizar tablas: wp db optimize\n7. Flush cache: wp cache flush\n\n**FASE 3 — Verificación**:\n- Nuevo tamaño de DB\n- Espacio recuperado\n- Resumen de lo limpiado",
+      "category": "maintenance"
+    },
+    {
+      "id": "domain-migration",
+      "name": "Migración de Dominio",
+      "icon": "🌐",
+      "description": "Search-replace seguro para cambio de dominio/URL. Con dry-run, backup previo, y flush completo.",
+      "prompt": "IMPORTANTE: Este skill requiere que el usuario proporcione el dominio viejo y el nuevo. Si no los ha dado, pregunta antes de continuar.\n\nEjecuta una migración de dominio segura:\n\n**FASE 1 — Preparación**:\n1. Verifica site_url y home_url actuales\n2. Exporta backup de la DB: wp db export pre-migration-[fecha].sql\n3. Confirma los dominios con el usuario\n\n**FASE 2 — Dry Run**:\n1. Ejecuta: wp search-replace 'dominio-viejo' 'dominio-nuevo' --dry-run\n2. Muestra cuántas tablas y cuántos reemplazos se harían\n3. ESPERA confirmación del usuario\n\n**FASE 3 — Ejecución** (solo tras confirmación):\n1. Ejecuta el search-replace real (sin --dry-run)\n2. Si es http → https también: wp search-replace 'http://dominio-nuevo' 'https://dominio-nuevo' --dry-run primero\n3. Flush rewrite rules: wp rewrite flush\n4. Flush cache: wp cache flush\n5. Flush transients: wp transient delete --all\n\n**FASE 4 — Verificación**:\n1. Verifica site_url y home_url\n2. Verifica que el sitio responde: wp eval \"echo home_url();\"\n3. Resumen de cambios realizados",
+      "category": "maintenance"
+    },
+    {
+      "id": "full-backup",
+      "name": "Backup Completo",
+      "icon": "💾",
+      "description": "Exporta DB + inventario completo de plugins, temas, versiones y configuración del sitio.",
+      "prompt": "Realiza un backup completo del sitio:\n\n1. **Base de datos**: wp db export backup-[fecha]-[nombre-sitio].sql\n2. **Inventario de plugins**: wp plugin list --format=json (nombre, versión, estado)\n3. **Inventario de temas**: wp theme list --format=json\n4. **Versión WordPress**: wp core version\n5. **Versión PHP**: wp eval \"echo phpversion();\"\n6. **URLs**: site_url, home_url\n7. **Usuarios admin**: lista para referencia\n8. **Opciones clave**: blogname, blogdescription, permalink_structure, timezone_string\n9. **Tamaño de DB**: wp db size\n\nGenera un resumen completo tipo 'snapshot' del sitio con:\n- Ruta del archivo SQL\n- Inventario completo\n- Fecha y hora del backup\n- Instrucciones de restauración (wp db import [archivo])",
+      "category": "maintenance"
+    },
+    {
+      "id": "update-all",
+      "name": "Actualizar Todo",
+      "icon": "🔄",
+      "description": "Actualiza core, plugins y temas de forma segura. Backup previo obligatorio, verificación posterior.",
+      "prompt": "Actualiza todo el sitio de forma segura, NUNCA actualices sin confirmar:\n\n**FASE 1 — Estado actual**:\n1. Versión de WordPress actual vs disponible: wp core check-update\n2. Plugins con updates: wp plugin list --update=available --format=json\n3. Temas con updates: wp theme list --update=available --format=json\n4. Muestra resumen de TODO lo que se va a actualizar\n5. ESPERA confirmación del usuario\n\n**FASE 2 — Backup** (obligatorio):\n1. wp db export pre-update-[fecha].sql\n\n**FASE 3 — Actualización** (tras confirmación):\n1. Plugins primero: wp plugin update --all\n2. Temas: wp theme update --all\n3. Core al final: wp core update (si hay update)\n4. Actualizar DB si necesario: wp core update-db\n\n**FASE 4 — Verificación**:\n1. wp eval \"echo home_url();\" — verifica que el sitio responde\n2. wp plugin list --status=active — verifica plugins activos\n3. Flush cache y rewrite rules\n4. Resumen de lo actualizado",
+      "category": "maintenance"
+    },
+    {
+      "id": "content-report",
+      "name": "Informe de Contenido",
+      "icon": "📊",
+      "description": "Dashboard completo: posts, páginas, CPTs, categorías, tags, media, borradores y contenido huérfano.",
+      "prompt": "Genera un informe ejecutivo del contenido del sitio:\n\n1. **Posts por estado**: wp post list --post_type=post --format=count para cada status (publish, draft, pending, private, trash)\n2. **Páginas por estado**: lo mismo con --post_type=page\n3. **Custom Post Types**: wp eval \"$types = get_post_types(['public' => true, '_builtin' => false], 'objects'); foreach($types as $t) echo $t->name.': '.wp_count_posts($t->name)->publish.' publicados\\n';\"\n4. **Categorías**: wp term list category --format=json --fields=name,count\n5. **Tags más usados**: wp term list post_tag --orderby=count --order=desc --format=json --fields=name,count --number=10\n6. **Media**: cuenta por tipo MIME\n7. **Últimos 5 publicados**: wp post list --posts_per_page=5 --format=json --fields=ID,post_title,post_date\n8. **Borradores viejos**: posts en draft con más de 30 días\n9. **Páginas huérfanas**: páginas sin parent que podrían ser navegación rota\n\nResumen ejecutivo con estadísticas clave y recomendaciones de content strategy.",
+      "category": "content"
+    },
+    {
+      "id": "user-audit",
+      "name": "Auditoría de Usuarios",
+      "icon": "👥",
+      "description": "Revisa todos los usuarios, roles, admins, application passwords y permisos custom.",
+      "prompt": "Auditoría completa de usuarios:\n\n1. **Todos los usuarios**: wp user list --format=json --fields=ID,user_login,user_email,roles,user_registered\n2. **Cuenta por rol**: wp eval \"print_r(count_users());\"\n3. **Administradores detallados**: lista completa con fecha de registro\n4. **Roles custom**: wp eval \"echo json_encode(array_keys(wp_roles()->roles));\"\n5. **Capabilities custom**: identifica capabilities no estándar\n6. **Application passwords**: wp eval \"foreach(get_users(['role' => 'administrator']) as $u) { $ps = WP_Application_Passwords::get_user_application_passwords($u->ID); if($ps) echo $u->user_login.': '.count($ps).' app passwords\\n'; }\"\n7. **Super admins** (si es multisite): wp super-admin list\n\nInforme con:\n- Usuarios sospechosos (emails genéricos, logins raros, registrados recientemente)\n- Admins innecesarios (recomendación de reducir)\n- Application passwords activos (riesgo si no se usan)\n- Plan de acción",
+      "category": "security"
+    },
+    {
+      "id": "seo-check",
+      "name": "Check SEO",
+      "icon": "🔍",
+      "description": "Verifica títulos, permalinks, visibilidad en buscadores, sitemap, SSL, robots.txt y plugins SEO.",
+      "prompt": "Revisa la configuración SEO del sitio:\n\n1. **Metadata básica**: blogname, blogdescription\n2. **Permalinks**: permalink_structure (debe ser 'bonito', no '?p=123')\n3. **Visibilidad**: blog_public (si es 0 = bloqueando Google!)\n4. **URLs**: home_url y siteurl — ¿usan HTTPS?\n5. **Plugin SEO**: busca yoast, rank-math, all-in-one-seo, the-seo-framework en plugins activos\n6. **Sitemap**: verifica si hay sitemap.xml accesible\n7. **Robots.txt**: wp eval \"echo get_option('blog_public') ? 'Visible' : 'BLOQUEADO';\"\n8. **Títulos duplicados**: busca posts con el mismo título\n9. **Posts sin extracto**: cuenta posts publish sin excerpt\n10. **Categoría 'Uncategorized'**: verifica si aún existe con posts (mala práctica SEO)\n\nInforme con:\n- Puntuación SEO básica (1-10)\n- Issues críticos (visibilidad, HTTPS, permalinks)\n- Recomendaciones priorizadas\n- Quick wins que se pueden ejecutar ahora mismo",
+      "category": "seo"
+    },
+    {
+      "id": "cron-debug",
+      "name": "Debug de Cron",
+      "icon": "⏰",
+      "description": "Diagnostica problemas de WP-Cron: eventos duplicados, cron bloqueado, tareas fallidas y acumulación.",
+      "prompt": "Diagnostica el sistema de cron de WordPress:\n\n1. **Lista todos los cron events**: wp cron event list --format=json\n2. **Busca duplicados**: eventos con el mismo hook programados múltiples veces\n3. **Cron constants**: verifica DISABLE_WP_CRON y ALTERNATE_WP_CRON\n4. **Eventos overdue**: cron events que deberían haberse ejecutado pero no lo han hecho\n5. **Cron schedules**: wp eval \"print_r(wp_get_schedules());\"\n6. **Cron lock**: verifica si el cron está bloqueado\n7. **Eventos de plugins desactivados**: cron hooks que apuntan a funciones que ya no existen\n\nInforme con:\n- Estado del sistema cron (Sano / Con problemas / Crítico)\n- Eventos duplicados a limpiar\n- Eventos huérfanos a eliminar\n- Recomendaciones (ej: usar server-side cron en vez de WP-Cron para sitios de alto tráfico)",
+      "category": "development"
+    },
+    {
+      "id": "woo-dashboard",
+      "name": "Dashboard WooCommerce",
+      "icon": "🛒",
+      "description": "Estado completo de la tienda: pedidos, productos, ingresos, métodos de pago, envío y configuración.",
+      "prompt": "Genera un dashboard de WooCommerce:\n\n1. Primero verifica si WooCommerce está activo. Si no, informa y termina.\n2. Si está activo:\n   - **Productos**: wp wc product list --format=json --fields=id,name,status,price,stock_status --per_page=5 (si falla, usa wp post list --post_type=product)\n   - **Pedidos recientes**: wp wc order list --format=json --fields=id,status,total,date_created --per_page=10\n   - **Pedidos por estado**: cuenta processing, completed, on-hold, cancelled, refunded\n   - **Moneda**: wp eval \"echo get_woocommerce_currency();\"\n   - **Payment gateways**: wp eval \"foreach(WC()->payment_gateways->get_available_payment_gateways() as $g) echo $g->id.': '.$g->title.'\\n';\"\n   - **País tienda**: wp eval \"echo WC()->countries->get_base_country();\"\n   - **Productos con stock bajo**: productos donde stock_quantity < 5\n   - **Versión WooCommerce**: wp eval \"echo WC()->version;\"\n\nResumen ejecutivo tipo dashboard con métricas clave.",
+      "category": "woocommerce"
+    },
+    {
+      "id": "dev-info",
+      "name": "Info Técnica Completa",
+      "icon": "🛠️",
+      "description": "Snapshot técnico: versiones, constantes WP, debug mode, DB prefix, object cache, mu-plugins, memory.",
+      "prompt": "Recopila toda la información técnica del sitio:\n\n1. **Versiones**: WordPress, PHP (phpversion()), MySQL (wp db version)\n2. **Constantes WP**: wp eval \"$constants = ['WP_DEBUG','WP_DEBUG_LOG','WP_DEBUG_DISPLAY','SCRIPT_DEBUG','DISALLOW_FILE_EDIT','DISALLOW_FILE_MODS','WP_MEMORY_LIMIT','WP_MAX_MEMORY_LIMIT','ABSPATH','WP_CONTENT_DIR','AUTOMATIC_UPDATER_DISABLED','WP_AUTO_UPDATE_CORE']; foreach($constants as $c) echo $c.': '.(defined($c) ? var_export(constant($c),true) : 'undefined').'\\n';\"\n3. **DB prefix**: wp eval \"global $wpdb; echo $wpdb->prefix;\"\n4. **Object cache**: wp eval \"echo wp_using_ext_object_cache() ? 'External (Redis/Memcached)' : 'Default (none)';\"\n5. **Tema activo**: nombre, versión, y parent theme si es child\n6. **Must-use plugins**: wp plugin list --status=must-use --format=json\n7. **Drop-in plugins**: wp plugin list --status=dropin --format=json\n8. **Tamaño uploads**: wp eval \"echo size_format(recurse_dirsize(wp_upload_dir()['basedir']));\"\n9. **Multisite**: wp eval \"echo is_multisite() ? 'Yes' : 'No';\"\n10. **SSL**: verifica si siteurl y homeurl usan https\n11. **Max upload size**: wp eval \"echo size_format(wp_max_upload_size());\"\n12. **PHP extensions**: wp eval \"echo implode(', ', array_filter(['curl','gd','imagick','mbstring','openssl','xml','zip'], 'extension_loaded'));\"\n\nFormatea como informe técnico tipo 'site spec sheet'.",
+      "category": "development"
+    },
+    {
+      "id": "plugin-audit",
+      "name": "Auditoría de Plugins",
+      "icon": "🔌",
+      "description": "Análisis profundo de plugins: activos vs inactivos, actualizaciones pendientes, compatibilidad, plugins pesados.",
+      "prompt": "Auditoría completa de plugins:\n\n1. **Todos los plugins**: wp plugin list --format=json (nombre, estado, versión, update disponible)\n2. **Activos vs inactivos**: cuenta y lista separada\n3. **Updates pendientes**: wp plugin list --update=available --format=json\n4. **Must-use plugins**: wp plugin list --status=must-use --format=json\n5. **Buscar plugins de seguridad**: busca wordfence, sucuri, ithemes-security, all-in-one-wp-security en la lista\n6. **Buscar plugins de cache**: busca wp-super-cache, w3-total-cache, wp-rocket, litespeed-cache\n7. **Buscar plugins de SEO**: busca wordpress-seo, seo-by-rank-math, all-in-one-seo-pack\n8. **Plugins inactivos** (eliminar recomendado): lista\n9. **Buscar duplicación funcional**: ej. múltiples plugins SEO o cache\n\nInforme con:\n- Total: X activos, Y inactivos, Z con updates\n- Plugins recomendados que faltan (seguridad, cache, backup)\n- Plugins a eliminar (inactivos, duplicados)\n- Compatibilidad con versión actual de WP/PHP",
+      "category": "security"
+    },
+    {
+      "id": "scaffold-plugin",
+      "name": "Crear Plugin",
+      "icon": "📦",
+      "description": "Scaffolding de un nuevo plugin WordPress con WP-CLI scaffold: estructura, archivos base, tests y activación.",
+      "prompt": "IMPORTANTE: Pregunta al usuario el nombre del plugin y una descripción breve antes de continuar.\n\nScaffold un nuevo plugin WordPress:\n\n1. **Crear estructura**: wp scaffold plugin [slug] --plugin_name='[Nombre]' --plugin_description='[Descripción]' --plugin_author='[Autor]'\n2. **Verificar creación**: lista archivos del plugin creado\n3. **Activar**: wp plugin activate [slug]\n4. **Verificar activación**: wp plugin list --status=active --name=[slug]\n\nDespués muestra:\n- Ruta del plugin creado\n- Archivos generados (main file, readme, tests)\n- Qué hacer a continuación (editar el archivo principal, añadir hooks, etc.)\n- Comandos útiles de scaffold adicionales:\n  - wp scaffold post-type [nombre] --plugin=[slug]\n  - wp scaffold taxonomy [nombre] --plugin=[slug]\n  - wp scaffold block [nombre] --plugin=[slug]",
+      "category": "development"
+    },
+    {
+      "id": "scaffold-cpt",
+      "name": "Crear Custom Post Type",
+      "icon": "📝",
+      "description": "Genera un Custom Post Type con WP-CLI scaffold, incluyendo taxonomías y labels.",
+      "prompt": "IMPORTANTE: Pregunta al usuario:\n- Nombre del CPT (slug, ej: 'libro', 'proyecto')\n- Plugin donde registrarlo (o tema)\n- Si necesita taxonomías asociadas\n\nLuego ejecuta:\n1. **Scaffold CPT**: wp scaffold post-type [slug] --label='[Label]' --plugin=[plugin]\n2. Si piden taxonomías: wp scaffold taxonomy [tax-slug] --post_types=[cpt-slug] --plugin=[plugin]\n3. **Flush rewrite**: wp rewrite flush\n4. **Verificar**: wp eval \"echo post_type_exists('[slug]') ? 'CPT registrado OK' : 'Error';\"\n\nMuestra:\n- Código generado y dónde se registra\n- Cómo personalizar labels, supports, capabilities\n- Cómo añadir campos custom con meta boxes o ACF",
+      "category": "development"
+    },
+    {
+      "id": "multisite-overview",
+      "name": "Overview Multisite",
+      "icon": "🌐",
+      "description": "Dashboard de red multisite: lista de sitios, estado, plugins de red, temas disponibles.",
+      "prompt": "Verifica si es multisite primero. Si no lo es, informa y sugiere alternativas.\n\nSi es multisite:\n1. **Lista de sitios**: wp site list --format=json\n2. **Plugins de red**: wp plugin list --status=active-network --format=json\n3. **Temas disponibles en red**: wp theme list --format=json\n4. **Super admins**: wp super-admin list\n5. **Info de cada sitio**: para los primeros 5 sitios, muestra nombre, URL, fecha de creación\n6. **Espacio total DB**: wp db size\n\nResumen de la red con métricas clave.",
+      "category": "development"
+    },
+    {
+      "id": "config-check",
+      "name": "Revisar wp-config",
+      "icon": "⚙️",
+      "description": "Analiza la configuración de wp-config.php: debug, salts, DB, memory limits, constantes de seguridad.",
+      "prompt": "Revisa la configuración de wp-config.php sin mostrar credenciales sensibles:\n\n1. **Debug settings**: WP_DEBUG, WP_DEBUG_LOG, WP_DEBUG_DISPLAY, SCRIPT_DEBUG\n2. **Security settings**: DISALLOW_FILE_EDIT, DISALLOW_FILE_MODS, FORCE_SSL_ADMIN\n3. **Memory**: WP_MEMORY_LIMIT, WP_MAX_MEMORY_LIMIT\n4. **Updates**: AUTOMATIC_UPDATER_DISABLED, WP_AUTO_UPDATE_CORE\n5. **Cron**: DISABLE_WP_CRON, ALTERNATE_WP_CRON\n6. **Cache**: WP_CACHE\n7. **Salts**: verifica que existan (NO mostrar los valores, solo confirmar que están definidos)\n8. **DB charset**: wp eval \"global $wpdb; echo $wpdb->charset;\"\n9. **Table prefix**: ¿es 'wp_' (inseguro) o custom?\n\nGenera recomendaciones:\n- Qué constantes añadir para producción\n- Qué cambiar para mejorar seguridad\n- Configuración óptima de debug para desarrollo vs producción",
+      "category": "security"
+    },
+    {
+      "id": "media-cleanup",
+      "name": "Limpieza de Media",
+      "icon": "🖼️",
+      "description": "Identifica imágenes huérfanas, thumbnails sin usar, y regenera imágenes si es necesario.",
+      "prompt": "Analiza la librería de medios:\n\n1. **Total de archivos media**: wp post list --post_type=attachment --format=count\n2. **Media por tipo**: desglose por MIME type\n3. **Tamaño de uploads**: wp eval \"echo size_format(recurse_dirsize(wp_upload_dir()['basedir']));\"\n4. **Imágenes sin usar**: media attachments no referenciados en ningún post (busca con wp eval)\n5. **Thumbnails registrados**: wp eval \"echo json_encode(array_keys(wp_get_registered_image_subsizes()));\"\n6. **Últimos 10 uploads**: fecha, nombre, tipo, tamaño\n\nRecomendaciones:\n- Si hay muchos no usados, recomendar revisión manual\n- Si los thumbnails están desactualizados, recomendar: wp media regenerate --yes\n- Estimación de espacio recuperable",
+      "category": "maintenance"
+    },
+    {
+      "id": "quick-fix-404",
+      "name": "Fix Errores 404",
+      "icon": "🔧",
+      "description": "Diagnóstico y fix rápido para problemas de 404 en WordPress: permalinks, .htaccess, CPTs.",
+      "prompt": "Diagnostica y arregla problemas de 404:\n\n1. **Estructura de permalinks actual**: wp eval \"echo get_option('permalink_structure');\"\n2. **Flush rewrite rules**: wp rewrite flush\n3. **Verificar rewrite rules**: wp rewrite list --format=json (primeras 20)\n4. **CPTs registrados**: verifica que tienen rewrite habilitado\n5. **Verificar que el sitio responde**: wp eval \"echo home_url();\"\n6. **Tema activo**: verifica que no sea un tema roto\n\nAcciones ejecutadas:\n- Flush de rewrite rules (soluciona el 80% de los 404)\n- Verificación de estructura de permalinks\n- Si persiste: recomendaciones avanzadas (.htaccess, mod_rewrite, nginx config)",
+      "category": "maintenance"
+    },
+    {
+      "id": "email-test",
+      "name": "Test de Email",
+      "icon": "📧",
+      "description": "Verifica si WordPress puede enviar emails y diagnostica problemas de SMTP.",
+      "prompt": "Diagnostica el sistema de email de WordPress:\n\n1. **Admin email**: wp option get admin_email\n2. **Enviar email de test**: wp eval \"$sent = wp_mail(get_option('admin_email'), 'WP AI Admin - Test Email', 'Este es un test de envio de email desde WP-CLI. Si recibes esto, el email funciona correctamente. Enviado: '.date('Y-m-d H:i:s')); echo $sent ? 'Email enviado OK' : 'FALLO al enviar email';\"\n3. **Plugin SMTP**: busca wp-mail-smtp, post-smtp, fluent-smtp en plugins activos\n4. **Verificar mailer**: wp eval \"echo get_option('mail_smtp_host', 'No configurado');\"\n5. **Comprobar que el email de admin es válido**\n\nInforme:\n- Estado del email (funciona/no funciona)\n- Si hay plugin SMTP configurado\n- Recomendaciones (usar SMTP en producción, plugin recomendado)",
+      "category": "maintenance"
+    }
+  ]
+}

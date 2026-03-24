@@ -4,10 +4,12 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { initClient, isConnected, chat } from './lib/claude.js';
 import { testConnection } from './lib/wp-cli.js';
+import { matchSkills, listAvailableSkills } from './lib/wp-skills.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SITES_PATH = join(__dirname, 'config', 'sites.json');
 const HISTORY_PATH = join(__dirname, 'config', 'history.json');
+const SKILLS_PATH = join(__dirname, 'config', 'skills.json');
 const PORT = 3848;
 
 // Load .env manually (no dotenv dependency)
@@ -148,11 +150,27 @@ app.post('/api/chat/reset', (req, res) => {
 // ==================== STATUS ====================
 app.get('/api/status', (req, res) => {
   const sitesData = readSites();
+  const wpSkills = listAvailableSkills();
   res.json({
     claude: isConnected(),
     sites: sitesData.sites.length,
-    activeSite: sitesData.sites.find(s => s.active) || null
+    activeSite: sitesData.sites.find(s => s.active) || null,
+    wpAgentSkills: wpSkills.length
   });
+});
+
+// ==================== WP AGENT SKILLS ====================
+app.get('/api/wp-skills', (req, res) => {
+  res.json({ skills: listAvailableSkills() });
+});
+
+app.post('/api/wp-skills/match', (req, res) => {
+  const { message } = req.body;
+  if (!message) return res.json({ matched: [] });
+  const matched = matchSkills(message);
+  const allSkills = listAvailableSkills();
+  const details = matched.map(name => allSkills.find(s => s.id === name)).filter(Boolean);
+  res.json({ matched: details });
 });
 
 // ==================== API KEY ====================
@@ -196,4 +214,49 @@ app.get('/api/history', (req, res) => {
   } catch { res.json({ entries: [] }); }
 });
 
-app.listen(PORT, () => console.log(`\n  WP AI Admin → http://localhost:${PORT}\n  Sites: ${SITES_PATH}\n  Claude: ${isConnected() ? 'connected' : 'not configured'}\n`));
+// ==================== SKILLS ====================
+function readSkills() {
+  if (!existsSync(SKILLS_PATH)) return { skills: [] };
+  return JSON.parse(readFileSync(SKILLS_PATH, 'utf-8'));
+}
+
+function writeSkills(data) {
+  writeFileSync(SKILLS_PATH, JSON.stringify(data, null, 2));
+}
+
+app.get('/api/skills', (req, res) => {
+  res.json(readSkills());
+});
+
+app.post('/api/skills', (req, res) => {
+  const data = readSkills();
+  const skill = {
+    id: req.body.id || 'skill-' + Date.now(),
+    name: req.body.name || 'New Skill',
+    icon: req.body.icon || '⚙️',
+    description: req.body.description || '',
+    prompt: req.body.prompt || '',
+    category: req.body.category || 'custom'
+  };
+  data.skills.push(skill);
+  writeSkills(data);
+  res.json({ ok: true, skill });
+});
+
+app.put('/api/skills/:id', (req, res) => {
+  const data = readSkills();
+  const idx = data.skills.findIndex(s => s.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Skill not found' });
+  Object.assign(data.skills[idx], req.body);
+  writeSkills(data);
+  res.json({ ok: true, skill: data.skills[idx] });
+});
+
+app.delete('/api/skills/:id', (req, res) => {
+  const data = readSkills();
+  data.skills = data.skills.filter(s => s.id !== req.params.id);
+  writeSkills(data);
+  res.json({ ok: true });
+});
+
+app.listen(PORT, () => console.log(`\n  WP AI Admin → http://localhost:${PORT}\n  Sites: ${SITES_PATH}\n  Skills: ${readSkills().skills.length} loaded\n  Claude: ${isConnected() ? 'connected' : 'not configured'}\n`));

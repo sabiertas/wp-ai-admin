@@ -11,6 +11,7 @@ let state = {
 async function init() {
   await refreshStatus();
   await loadSites();
+  await loadSkills();
   setupTypeToggle();
 }
 
@@ -24,19 +25,20 @@ async function refreshStatus() {
     const dot = document.getElementById('claude-dot');
     const text = document.getElementById('claude-text');
     if (data.claude) {
-      dot.className = 'w-2 h-2 rounded-full bg-success';
+      dot.className = 'w-2 h-2 rounded-full bg-success shrink-0';
       text.textContent = 'Claude: conectado';
-      text.className = 'text-success text-xs';
+      text.className = 'text-[12px] text-success';
     } else {
-      dot.className = 'w-2 h-2 rounded-full bg-warning';
+      dot.className = 'w-2 h-2 rounded-full bg-amber-500 shrink-0';
       text.textContent = 'Claude: sin API key';
-      text.className = 'text-warning text-xs';
+      text.className = 'text-[12px] text-amber-500';
     }
 
     updateSiteStatus();
   } catch {
-    document.getElementById('claude-dot').className = 'w-2 h-2 rounded-full bg-danger';
+    document.getElementById('claude-dot').className = 'w-2 h-2 rounded-full bg-danger shrink-0';
     document.getElementById('claude-text').textContent = 'Server offline';
+    document.getElementById('claude-text').className = 'text-[12px] text-danger';
   }
 }
 
@@ -184,8 +186,20 @@ async function sendMessage(e) {
   // Add user message
   appendMessage('user', message);
 
-  // Add thinking indicator
+  // Match WP agent skills and show indicator
   const thinkingEl = appendMessage('assistant', '<span class="thinking text-text-muted">Pensando...</span>');
+  try {
+    const skillMatch = await fetch('/api/wp-skills/match', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message })
+    });
+    const skillData = await skillMatch.json();
+    if (skillData.matched && skillData.matched.length > 0) {
+      const skillNames = skillData.matched.map(s => s.name).join(', ');
+      thinkingEl.innerHTML = `<span class="thinking text-text-muted">Pensando...</span><span style="display:block;font-size:0.65rem;color:#ff9d36;margin-top:4px;opacity:0.7">🧠 ${skillNames}</span>`;
+    }
+  } catch { /* non-critical */ }
 
   try {
     const res = await fetch('/api/chat', {
@@ -296,14 +310,147 @@ async function loadHistory() {
   } catch { /* ignore */ }
 }
 
+// ==================== SKILLS ====================
+let allSkills = [];
+
+async function loadSkills() {
+  try {
+    const res = await fetch('/api/skills');
+    const data = await res.json();
+    allSkills = data.skills || [];
+    renderSkillsGrid(allSkills);
+    renderSkillFilters(allSkills);
+    renderSidebarSkills(allSkills);
+  } catch { /* ignore */ }
+}
+
+function renderSkillsGrid(skills) {
+  const grid = document.getElementById('skills-grid');
+  if (!skills.length) {
+    grid.innerHTML = '<p class="text-text-muted text-sm">No hay skills configurados.</p>';
+    return;
+  }
+  grid.innerHTML = skills.map(s => `
+    <div class="skill-card" onclick="runSkill('${s.id}')">
+      <span class="skill-icon">${s.icon}</span>
+      <div class="flex-1 min-w-0">
+        <div class="skill-name">${s.name}</div>
+        <div class="skill-desc">${s.description}</div>
+        <span class="skill-cat">${s.category}</span>
+      </div>
+      <div class="skill-actions" onclick="event.stopPropagation()">
+        <button onclick="editSkill('${s.id}')" class="text-text-muted hover:text-text-primary p-1 rounded transition-colors" title="Editar">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z"/></svg>
+        </button>
+        <button onclick="deleteSkill('${s.id}')" class="text-text-muted hover:text-danger p-1 rounded transition-colors" title="Eliminar">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderSkillFilters(skills) {
+  const categories = [...new Set(skills.map(s => s.category))];
+  const container = document.getElementById('skill-filters');
+  container.innerHTML = `
+    <button onclick="filterSkills('all')" class="skill-filter active text-xs px-3 py-1.5 rounded-lg border transition-colors" data-cat="all">Todas</button>
+    ${categories.map(c => `<button onclick="filterSkills('${c}')" class="skill-filter text-xs px-3 py-1.5 rounded-lg border transition-colors" data-cat="${c}">${c}</button>`).join('')}
+  `;
+}
+
+function filterSkills(cat) {
+  document.querySelectorAll('.skill-filter').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.cat === cat);
+  });
+  const filtered = cat === 'all' ? allSkills : allSkills.filter(s => s.category === cat);
+  renderSkillsGrid(filtered);
+}
+
+function renderSidebarSkills(skills) {
+  const container = document.getElementById('sidebar-workflows');
+  const top = skills.slice(0, 4);
+  container.innerHTML = `
+    <p class="text-[10px] text-text-muted uppercase tracking-widest font-medium px-3 mb-1.5">Workflows</p>
+    ${top.map(s => `<button onclick="runSkill('${s.id}')" class="w-full text-left px-3 py-1.5 rounded-lg text-[12px] text-text-muted hover:text-amber-400 transition-colors flex items-center gap-2"><span>${s.icon}</span> ${s.name}</button>`).join('')}
+    ${skills.length > 4 ? `<button onclick="showView('workflows')" class="w-full text-left px-3 py-1.5 rounded-lg text-[11px] text-amber-500/60 hover:text-amber-400 transition-colors">Ver todos (${skills.length})...</button>` : ''}
+  `;
+}
+
+function runSkill(id) {
+  const skill = allSkills.find(s => s.id === id);
+  if (!skill) return;
+  showView('chat');
+  document.getElementById('chat-input').value = skill.prompt;
+  document.getElementById('chat-form').dispatchEvent(new Event('submit'));
+}
+
+function showCreateSkill() {
+  document.getElementById('skill-form-title').textContent = 'Crear Workflow';
+  document.getElementById('skill-edit-id').value = '';
+  document.getElementById('skill-name').value = '';
+  document.getElementById('skill-icon').value = '';
+  document.getElementById('skill-description').value = '';
+  document.getElementById('skill-prompt').value = '';
+  document.getElementById('skill-category').value = 'custom';
+  document.getElementById('skill-form').classList.remove('hidden');
+}
+
+function editSkill(id) {
+  const skill = allSkills.find(s => s.id === id);
+  if (!skill) return;
+  document.getElementById('skill-form-title').textContent = 'Editar Workflow';
+  document.getElementById('skill-edit-id').value = skill.id;
+  document.getElementById('skill-name').value = skill.name;
+  document.getElementById('skill-icon').value = skill.icon;
+  document.getElementById('skill-description').value = skill.description;
+  document.getElementById('skill-prompt').value = skill.prompt;
+  document.getElementById('skill-category').value = skill.category;
+  document.getElementById('skill-form').classList.remove('hidden');
+}
+
+function hideSkillForm() {
+  document.getElementById('skill-form').classList.add('hidden');
+}
+
+async function saveSkill() {
+  const editId = document.getElementById('skill-edit-id').value;
+  const body = {
+    name: document.getElementById('skill-name').value,
+    icon: document.getElementById('skill-icon').value || '⚙️',
+    description: document.getElementById('skill-description').value,
+    prompt: document.getElementById('skill-prompt').value,
+    category: document.getElementById('skill-category').value
+  };
+  if (!body.name || !body.prompt) return alert('Nombre y prompt son obligatorios');
+
+  if (editId) {
+    await fetch(`/api/skills/${editId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  } else {
+    body.id = body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    await fetch('/api/skills', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  }
+  hideSkillForm();
+  await loadSkills();
+}
+
+async function deleteSkill(id) {
+  if (!confirm('Eliminar este workflow?')) return;
+  await fetch(`/api/skills/${id}`, { method: 'DELETE' });
+  await loadSkills();
+}
+
 // ==================== VIEWS ====================
 function showView(view) {
-  ['chat', 'settings', 'history'].forEach(v => {
-    document.getElementById('view-' + v).classList.toggle('hidden', v !== view);
-    document.querySelector(`[data-view="${v}"]`).classList.toggle('active', v === view);
+  ['chat', 'settings', 'history', 'workflows'].forEach(v => {
+    const el = document.getElementById('view-' + v);
+    if (el) el.classList.toggle('hidden', v !== view);
+    const btn = document.querySelector(`[data-view="${v}"]`);
+    if (btn) btn.classList.toggle('active', v === view);
   });
   if (view === 'history') loadHistory();
   if (view === 'settings') loadSites();
+  if (view === 'workflows') loadSkills();
 }
 
 // ==================== UTILS ====================
@@ -327,6 +474,13 @@ document.addEventListener('keydown', (e) => {
     sendMessage(e);
   }
 });
+
+// ==================== QUICK ACTIONS ====================
+function quickAction(message) {
+  showView('chat');
+  document.getElementById('chat-input').value = message;
+  document.getElementById('chat-form').dispatchEvent(new Event('submit'));
+}
 
 // Init on load
 init();

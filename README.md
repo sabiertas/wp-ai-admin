@@ -1,0 +1,142 @@
+# WP AI Admin
+
+> Manage your WordPress sites with natural language — powered by Claude AI + WP-CLI.
+
+![WP AI Admin](https://img.shields.io/badge/WordPress-AI%20Admin-ff9d36?style=flat-square) ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square) ![Node](https://img.shields.io/badge/node-18%2B-green?style=flat-square)
+
+WP AI Admin is a local web application that lets you manage any WordPress site through a chat interface. Ask questions in plain language, and Claude AI translates your intent into WP-CLI commands — executed in real-time on your site.
+
+## Features
+
+- **Natural language WordPress management** — "list active plugins", "create a draft post about SEO", "do a health check"
+- **29 pre-built WP-CLI tools** + a generic `wp_cli_run` that executes ANY WP-CLI command
+- **13 WordPress Agent Skills** from the [official WordPress repo](https://github.com/WordPress/agent-skills) — auto-loaded by context
+- **20 ready-to-use Workflows** — multi-step recipes: security audit, performance review, DB cleanup, domain migration, and more
+- **Multi-site management** — add local (MAMP) or remote (SSH) WordPress sites
+- **Command history** — full log of every WP-CLI command executed
+- **Installable as PWA** — use it as a desktop app
+- **Custom workflows** — create, edit, and share your own automation recipes
+
+## Quick Start
+
+```bash
+git clone https://github.com/AJJulian/wp-ai-admin.git
+cd wp-ai-admin
+bash setup.sh
+npm start
+```
+
+Then open **http://localhost:3848**
+
+### What `setup.sh` does
+
+1. Checks Node.js ≥ 18 and WP-CLI
+2. Installs dependencies (`npm install`)
+3. Downloads [WordPress Agent Skills](https://github.com/WordPress/agent-skills)
+4. Creates config directory
+5. Optionally sets your Anthropic API key
+
+## Requirements
+
+- **Node.js 18+**
+- **WP-CLI** installed and in PATH ([install guide](https://wp-cli.org/#installing))
+- **Anthropic API key** ([get one here](https://console.anthropic.com/))
+- A WordPress site (local or remote via SSH)
+
+## Architecture
+
+```
+wp-ai-admin/
+├── server.js              # Express server + API routes
+├── lib/
+│   ├── claude.js          # Claude API client with tool_use
+│   ├── tools.js           # 29 WP-CLI tool definitions
+│   ├── wp-cli.js          # Command executor (local + SSH)
+│   └── wp-skills.js       # Dynamic skill loader from WordPress/agent-skills
+├── public/
+│   ├── index.html         # UI (Tailwind v4 + amber palette)
+│   ├── app.js             # Frontend logic
+│   └── manifest.json      # PWA manifest
+├── config/
+│   ├── skills.json        # Workflow recipes (editable from UI)
+│   └── sites.json         # Site credentials (gitignored)
+├── vendor/
+│   └── agent-skills/      # WordPress official agent skills (auto-cloned)
+└── setup.sh               # One-command installer
+```
+
+### How it works
+
+1. User types a message in the chat
+2. The system matches relevant WordPress Agent Skills by analyzing the message
+3. Matched skills are injected into Claude's system prompt as expert context
+4. Claude decides which WP-CLI tools to call
+5. Tools execute commands on the active WordPress site
+6. Results are displayed in the chat with the executed commands visible
+
+### WordPress Agent Skills (auto-loaded)
+
+The app includes all 13 official skills from [WordPress/agent-skills](https://github.com/WordPress/agent-skills):
+
+| Skill | Loaded when... |
+|---|---|
+| `wp-wpcli-and-ops` | Any WP-CLI operation (always as base) |
+| `wp-performance` | Performance, speed, optimization topics |
+| `wp-plugin-development` | Plugin scaffolding, hooks, architecture |
+| `wp-block-development` | Gutenberg blocks, block.json |
+| `wp-block-themes` | theme.json, FSE, templates |
+| `wp-rest-api` | REST endpoints, API routes |
+| `wp-interactivity-api` | Frontend directives, stores |
+| `wp-phpstan` | Static analysis |
+| `wp-playground` | Disposable WP instances |
+| ...and more | |
+
+Skills are loaded **automatically** based on what you ask — no configuration needed.
+
+## Screenshots
+
+### Chat with WP-CLI
+Ask anything — Claude executes the right WP-CLI commands and explains the results.
+
+### Workflows
+20 pre-built multi-step recipes. Create your own from the UI.
+
+### Settings
+Manage API key and WordPress sites (local MAMP or remote SSH).
+
+## Adding a WordPress Site
+
+### Local (MAMP / Local WP)
+
+1. Go to **Settings** → **+ Add site**
+2. Name: `My Local Site`
+3. Type: `Local`
+4. Path: `/path/to/your/wordpress/` (the directory with `wp-config.php`)
+
+### Remote (SSH)
+
+1. Type: `Remote`
+2. SSH Host: `your-server.com`
+3. SSH User: `root` (or your SSH user)
+4. Path: `/var/www/html/` (remote WordPress path)
+
+> Make sure you have SSH key auth configured for remote sites.
+
+## Tech Stack
+
+- **Backend**: Node.js + Express
+- **AI**: Claude API (claude-sonnet-4-20250514) with tool_use
+- **Frontend**: Vanilla JS + Tailwind CSS v4 (browser CDN)
+- **Design**: Flowtitude Design System amber palette
+- **WordPress**: WP-CLI (any command)
+
+## License
+
+MIT
+
+## Credits
+
+- [Anthropic Claude API](https://docs.anthropic.com/) — AI backbone
+- [WordPress/agent-skills](https://github.com/WordPress/agent-skills) — Expert WordPress knowledge
+- [Flowtitude Design System](https://flowtitude.com) — Visual identity
+- [WP-CLI](https://wp-cli.org/) — WordPress command line

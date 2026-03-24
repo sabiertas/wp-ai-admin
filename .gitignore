@@ -1,3 +1,6 @@
 node_modules/
 .env
 config/sites.json
+config/history.json
+vendor/agent-skills/
+.claude/
