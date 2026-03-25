@@ -38,3 +38,9 @@
 | WPAI-017 | 🔵 open | Tool wp_db_export (backup base de datos) | D1 |
 
 ## Session Log
+
+### Plan Miércoles 25
+
+- [ ] Post LinkedIn: WordPress 7 + sorpresa WP AI Admin (usar plantilla WP7, cambiar texto)
+- [ ] Post X: versión corta del mismo
+- [ ] Recordatorio grupo meetup para el jueves
