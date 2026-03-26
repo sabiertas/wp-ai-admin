@@ -21,6 +21,16 @@ Abre **http://localhost:3848** en tu navegador.
 
 > El directorio `wp-ai-admin/` se crea donde ejecutes el `git clone`. Para volver a arrancarlo otro dia, entra en ese directorio y ejecuta `npm start`.
 
+### Actualizar
+
+```bash
+cd wp-ai-admin
+git pull
+npm start
+```
+
+Tu configuracion (API key y sitios) se conserva al actualizar.
+
 ### Que hace `setup.sh`
 
 1. Comprueba Node.js >= 18
