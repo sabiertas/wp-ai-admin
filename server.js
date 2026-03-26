@@ -1,5 +1,5 @@
 import express from 'express';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { initClient, isConnected, chat } from './lib/claude.js';
@@ -101,6 +101,29 @@ app.post('/api/sites/:id/test', async (req, res) => {
   res.json(result);
 });
 
+// ==================== SCAN SITES ====================
+app.post('/api/sites/scan', (req, res) => {
+  const { basePath } = req.body;
+  if (!basePath || !existsSync(basePath)) {
+    return res.status(400).json({ error: 'Ruta no valida', sites: [] });
+  }
+  const found = [];
+  try {
+    const entries = readdirSync(basePath, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        const wpConfig = join(basePath, entry.name, 'wp-config.php');
+        if (existsSync(wpConfig)) {
+          found.push({ name: entry.name, path: join(basePath, entry.name) });
+        }
+      }
+    }
+  } catch (e) {
+    return res.status(500).json({ error: e.message, sites: [] });
+  }
+  res.json({ sites: found });
+});
+
 // ==================== CHAT ====================
 // In-memory conversation store (per session, resets on restart)
 const conversations = {};
@@ -184,13 +207,15 @@ app.post('/api/wp-skills/match', (req, res) => {
 // ==================== API KEY ====================
 app.post('/api/settings/apikey', (req, res) => {
   const { apiKey } = req.body;
-  if (!apiKey) return res.status(400).json({ error: 'API key required' });
+  if (!apiKey || !apiKey.trim()) return res.status(400).json({ error: 'API key required' });
+
+  const key = apiKey.trim();
 
   // Save to .env
   const envPath = join(__dirname, '.env');
-  writeFileSync(envPath, `ANTHROPIC_API_KEY=${apiKey}\n`);
-  process.env.ANTHROPIC_API_KEY = apiKey;
-  initClient(apiKey);
+  writeFileSync(envPath, `ANTHROPIC_API_KEY=${key}\n`);
+  process.env.ANTHROPIC_API_KEY = key;
+  initClient(key);
   res.json({ ok: true, connected: true });
 });
 

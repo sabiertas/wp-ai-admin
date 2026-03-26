@@ -116,6 +116,31 @@ function setupTypeToggle() {
   }
 }
 
+async function scanSites() {
+  const basePath = document.getElementById('scan-base-path').value.trim();
+  if (!basePath) return alert('Introduce la ruta base donde estan tus sitios WordPress');
+  const res = await fetch('/api/sites/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ basePath }) });
+  const data = await res.json();
+  const list = document.getElementById('scan-results');
+  if (!data.sites || data.sites.length === 0) {
+    list.innerHTML = '<p class="text-text-muted text-xs">No se encontraron sitios WordPress en esa ruta.</p>';
+    return;
+  }
+  list.innerHTML = data.sites.map(s => `
+    <button onclick="fillSiteFromScan('${s.name}', '${s.path}')" class="flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg bg-surface border border-border hover:border-amber-500/40 transition-colors text-sm">
+      <svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 00-1.883 2.542l.857 6a2.25 2.25 0 002.227 1.932H19.05a2.25 2.25 0 002.227-1.932l.857-6a2.25 2.25 0 00-1.883-2.542m-16.5 0V6A2.25 2.25 0 016 3.75h3.879a1.5 1.5 0 011.06.44l2.122 2.12a1.5 1.5 0 001.06.44H18A2.25 2.25 0 0120.25 9v.776"/></svg>
+      <span class="text-text-primary">${s.name}</span>
+      <span class="text-text-muted text-[10px] ml-auto truncate max-w-[200px]">${s.path}</span>
+    </button>
+  `).join('');
+}
+
+function fillSiteFromScan(name, path) {
+  document.getElementById('new-site-name').value = name;
+  document.getElementById('new-site-path').value = path;
+  document.getElementById('scan-results').innerHTML = '<p class="text-green-400 text-xs">Seleccionado: ' + name + ' — ahora pulsa Guardar</p>';
+}
+
 async function addSite() {
   const body = {
     name: document.getElementById('new-site-name').value,
@@ -472,10 +497,11 @@ function formatMarkdown(text) {
     .replace(/\n/g, '<br>');
 }
 
-// Keyboard shortcut: Enter to send (prevent double-submit — form onsubmit handles execution)
+// Keyboard shortcut: Enter to send
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey && document.activeElement.id === 'chat-input') {
     e.preventDefault();
+    document.getElementById('chat-form').dispatchEvent(new Event('submit'));
   }
 });
 
