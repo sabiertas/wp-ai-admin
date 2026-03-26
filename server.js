@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { initClient, isConnected, chat } from './lib/claude.js';
 import { testConnection } from './lib/wp-cli.js';
 import { matchSkills, listAvailableSkills } from './lib/wp-skills.js';
+import { discoverMcp, getMcpSummary } from './lib/mcp-proxy.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SITES_PATH = join(__dirname, 'config', 'sites.json');
@@ -61,6 +62,9 @@ app.post('/api/sites', (req, res) => {
     name: req.body.name || 'New Site',
     type: req.body.type || 'local',
     path: req.body.path || '',
+    url: req.body.url || '',
+    wp_user: req.body.wp_user || '',
+    wp_app_password: req.body.wp_app_password || '',
     ssh_host: req.body.ssh_host || '',
     ssh_user: req.body.ssh_user || '',
     active: data.sites.length === 0 // first site is active by default
@@ -98,7 +102,39 @@ app.post('/api/sites/:id/test', async (req, res) => {
   const site = data.sites.find(s => s.id === req.params.id);
   if (!site) return res.status(404).json({ error: 'Site not found' });
   const result = await testConnection(site);
+
+  // Also probe MCP endpoints if site has a URL and credentials
+  if (result.connected && site.url) {
+    try {
+      const mcp = await discoverMcp(site);
+      const hasAnyMcp = Object.values(mcp).some(p => p.available);
+      if (hasAnyMcp) {
+        // Persist MCP discovery to site config
+        site.mcp = mcp;
+        writeSites(data);
+        result.mcp = getMcpSummary(site);
+      }
+    } catch { /* MCP discovery is non-blocking */ }
+  }
+
   res.json(result);
+});
+
+// MCP discovery — probe a site for MCP endpoints on demand
+app.post('/api/sites/:id/mcp-discover', async (req, res) => {
+  const data = readSites();
+  const site = data.sites.find(s => s.id === req.params.id);
+  if (!site) return res.status(404).json({ error: 'Site not found' });
+  if (!site.url) return res.status(400).json({ error: 'Site needs a URL to discover MCP endpoints. Add it in Settings.' });
+
+  try {
+    const mcp = await discoverMcp(site);
+    site.mcp = mcp;
+    writeSites(data);
+    res.json({ ok: true, mcp: getMcpSummary(site) });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // ==================== SCAN SITES ====================
@@ -186,11 +222,13 @@ app.post('/api/chat/reset', (req, res) => {
 app.get('/api/status', (req, res) => {
   const sitesData = readSites();
   const wpSkills = listAvailableSkills();
+  const activeSite = sitesData.sites.find(s => s.active) || null;
   res.json({
     claude: isConnected(),
     sites: sitesData.sites.length,
-    activeSite: sitesData.sites.find(s => s.active) || null,
-    wpAgentSkills: wpSkills.length
+    activeSite,
+    wpAgentSkills: wpSkills.length,
+    mcp: activeSite ? getMcpSummary(activeSite) : []
   });
 });
 

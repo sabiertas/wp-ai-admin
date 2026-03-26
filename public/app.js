@@ -4,7 +4,8 @@ let state = {
   sites: [],
   activeSite: null,
   claudeConnected: false,
-  loading: false
+  loading: false,
+  mcp: [] // MCP providers for active site
 };
 
 // ==================== INIT ====================
@@ -21,6 +22,7 @@ async function refreshStatus() {
     const data = await res.json();
     state.claudeConnected = data.claude;
     state.activeSite = data.activeSite;
+    state.mcp = data.mcp || [];
 
     const dot = document.getElementById('claude-dot');
     const text = document.getElementById('claude-text');
@@ -35,6 +37,7 @@ async function refreshStatus() {
     }
 
     updateSiteStatus();
+    renderMcpIndicators();
   } catch {
     document.getElementById('claude-dot').className = 'w-2 h-2 rounded-full bg-danger shrink-0';
     document.getElementById('claude-text').textContent = 'Server offline';
@@ -52,6 +55,27 @@ function updateSiteStatus() {
     dot.className = 'w-2 h-2 rounded-full bg-gray-500';
     text.textContent = 'Sin sitio seleccionado';
   }
+}
+
+function renderMcpIndicators() {
+  const container = document.getElementById('mcp-indicators');
+  if (!container) return;
+
+  if (!state.mcp || state.mcp.length === 0) {
+    container.classList.add('hidden');
+    container.innerHTML = '';
+    return;
+  }
+
+  container.classList.remove('hidden');
+  container.innerHTML = state.mcp.map(p => `
+    <div class="flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+      <svg class="w-3 h-3 text-emerald-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.764-1.414l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/>
+      </svg>
+      <span class="text-[10px] text-emerald-300 font-medium">${escapeHtml(p.name)}: ${p.toolCount} tools</span>
+    </div>
+  `).join('');
 }
 
 // ==================== SITES ====================
@@ -80,19 +104,23 @@ function renderSitesList() {
     list.innerHTML = '<p class="text-text-muted text-sm">No hay sitios configurados.</p>';
     return;
   }
-  list.innerHTML = state.sites.map(s => `
+  list.innerHTML = state.sites.map(s => {
+    const mcpBadges = getMcpBadgesHtml(s);
+    return `
     <div class="site-card ${s.active ? 'active-site' : ''}">
-      <div>
+      <div class="flex-1 min-w-0">
         <div class="text-sm font-medium">${escapeHtml(s.name)}</div>
         <div class="text-xs text-text-muted mt-0.5">${s.type === 'remote' ? `${escapeHtml(s.ssh_user)}@${escapeHtml(s.ssh_host)}:` : ''}${escapeHtml(s.path)}</div>
+        ${mcpBadges ? `<div class="flex flex-wrap gap-1 mt-1.5">${mcpBadges}</div>` : ''}
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 shrink-0">
         <button onclick="testSite('${escapeHtml(s.id)}')" class="text-xs text-text-muted hover:text-text-primary px-2 py-1 rounded hover:bg-white/5" title="Test conexion">Test</button>
+        ${s.url ? `<button onclick="discoverMcp('${escapeHtml(s.id)}')" class="text-xs text-emerald-500/70 hover:text-emerald-400 px-2 py-1 rounded hover:bg-white/5" title="Discover MCP">MCP</button>` : ''}
         ${!s.active ? `<button onclick="activateSite('${escapeHtml(s.id)}')" class="text-xs text-accent hover:text-accent/80 px-2 py-1 rounded hover:bg-white/5">Activar</button>` : '<span class="text-xs text-success">Activo</span>'}
         <button onclick="deleteSite('${escapeHtml(s.id)}')" class="text-xs text-danger/60 hover:text-danger px-2 py-1 rounded hover:bg-white/5">Borrar</button>
       </div>
     </div>
-  `).join('');
+  `}).join('');
 }
 
 function showAddSite() {
@@ -103,6 +131,9 @@ function hideAddSite() {
   document.getElementById('add-site-form').classList.add('hidden');
   document.getElementById('new-site-name').value = '';
   document.getElementById('new-site-path').value = '';
+  document.getElementById('new-site-url').value = '';
+  document.getElementById('new-site-wp-user').value = '';
+  document.getElementById('new-site-wp-app-password').value = '';
   document.getElementById('new-site-ssh-host').value = '';
   document.getElementById('new-site-ssh-user').value = '';
 }
@@ -146,6 +177,9 @@ async function addSite() {
     name: document.getElementById('new-site-name').value,
     type: document.getElementById('new-site-type').value,
     path: document.getElementById('new-site-path').value,
+    url: document.getElementById('new-site-url').value,
+    wp_user: document.getElementById('new-site-wp-user').value,
+    wp_app_password: document.getElementById('new-site-wp-app-password').value,
     ssh_host: document.getElementById('new-site-ssh-host').value,
     ssh_user: document.getElementById('new-site-ssh-user').value
   };
@@ -180,7 +214,14 @@ async function testSite(id) {
     const res = await fetch(`/api/sites/${id}/test`, { method: 'POST' });
     const data = await res.json();
     if (data.connected) {
-      btn.textContent = `v${data.version}`;
+      let label = `v${data.version}`;
+      if (data.mcp && data.mcp.length > 0) {
+        label += ' +MCP';
+        // Reload sites to get updated MCP data
+        await loadSites();
+        await refreshStatus();
+      }
+      btn.textContent = label;
       btn.className = btn.className.replace('text-text-muted', 'text-success');
     } else {
       btn.textContent = 'Error';
@@ -575,6 +616,39 @@ function quickAction(message) {
   showView('chat');
   document.getElementById('chat-input').value = message;
   document.getElementById('chat-form').dispatchEvent(new Event('submit'));
+}
+
+// ==================== MCP ====================
+function getMcpBadgesHtml(site) {
+  if (!site.mcp) return '';
+  const providers = Object.entries(site.mcp)
+    .filter(([, info]) => info.available)
+    .map(([, info]) => info);
+  if (providers.length === 0) return '';
+  return providers.map(p =>
+    `<span class="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">${escapeHtml(p.name)}: ${p.toolCount} tools</span>`
+  ).join('');
+}
+
+async function discoverMcp(id) {
+  const btn = event.target;
+  const origText = btn.textContent;
+  btn.textContent = '...';
+  try {
+    const res = await fetch(`/api/sites/${id}/mcp-discover`, { method: 'POST' });
+    const data = await res.json();
+    if (data.ok && data.mcp && data.mcp.length > 0) {
+      btn.textContent = data.mcp.map(p => `${p.name}: ${p.toolCount}`).join(', ');
+      btn.className = btn.className.replace('text-emerald-500/70', 'text-emerald-400');
+      await loadSites();
+      await refreshStatus();
+    } else {
+      btn.textContent = 'No MCP';
+    }
+  } catch {
+    btn.textContent = 'Error';
+  }
+  setTimeout(() => { btn.textContent = origText; btn.className = btn.className.replace('text-emerald-400', 'text-emerald-500/70'); }, 4000);
 }
 
 // Init on load

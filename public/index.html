@@ -71,6 +71,9 @@
           <span id="status-dot" class="w-2 h-2 rounded-full bg-text-muted/40"></span>
           <span id="status-text" class="text-text-muted">No conectado</span>
         </div>
+        <div id="mcp-indicators" class="mt-2 space-y-1 hidden">
+          <!-- Populated by JS: MCP provider badges -->
+        </div>
       </div>
     </div>
 
@@ -212,6 +215,20 @@
             <div class="mb-3">
               <label class="text-[11px] text-text-muted block mb-1 font-medium">Path WP-CLI (--path)</label>
               <input id="new-site-path" type="text" placeholder="/Volumes/Disco SSD/MAMP/mi-sitio/" class="w-full bg-surface border border-border rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/50">
+            </div>
+            <div class="mb-3">
+              <label class="text-[11px] text-text-muted block mb-1 font-medium">Site URL (for MCP discovery)</label>
+              <input id="new-site-url" type="text" placeholder="https://mi-sitio.com" class="w-full bg-surface border border-border rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/50">
+            </div>
+            <div class="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label class="text-[11px] text-text-muted block mb-1 font-medium">WP User (App Password)</label>
+                <input id="new-site-wp-user" type="text" placeholder="admin" class="w-full bg-surface border border-border rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/50">
+              </div>
+              <div>
+                <label class="text-[11px] text-text-muted block mb-1 font-medium">App Password</label>
+                <input id="new-site-wp-app-password" type="password" placeholder="xxxx xxxx xxxx xxxx" class="w-full bg-surface border border-border rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/50">
+              </div>
             </div>
             <div id="ssh-fields" class="hidden grid grid-cols-2 gap-3 mb-3">
               <div>

@@ -27,6 +27,14 @@
 | WPAI-011 | ✅ done | Frontend: indicador conexion por sitio (online/offline) | D1 |
 | WPAI-012 | ✅ done | Settings: campo API key Claude (.env) | D1 |
 
+### F1.5 — MCP Integration (Auto-discovery)
+
+| ID | Estado | Titulo | Complejidad |
+|---|---|---|---|
+| WPAI-018 | 🔵 open | Auto-discovery de MCP endpoints al conectar sitio | D3 |
+| WPAI-019 | 🔵 open | Proxy MCP: registrar tools descubiertos en Claude API call | D3 |
+| WPAI-020 | 🔵 open | UI: indicador de MCP tools disponibles por sitio | D1 |
+
 ### F2 — Polish + Demo Ready
 
 | ID | Estado | Titulo | Complejidad |
