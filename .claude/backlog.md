@@ -39,6 +39,12 @@
 
 ## Session Log
 
+### 2026-03-24 — Sesion 1: MVP completo v0.1.0 + v0.2.0
+- **What**: Proyecto creado desde cero. v0.1.0: Express server + chat UI + 8 tools WP-CLI (plugins, posts, users, options, themes, health) + Claude API con tool_use loop. v0.2.0: Workflows predefinidos (security audit, performance, content, SEO), WP Agent Skills (WindPress/Tailwind debug con deteccion v3/v4), PWA manifest, auto-installer script bash. Fix matching WindPress/Tailwind skills.
+- **Why**: Herramienta para gestionar WordPress via chat con IA. Regalo/demo para evento WP7 del jueves 26 marzo.
+- **Where**: server.js, public/index.html, public/app.js, public/style.css, install.sh, manifest.json, README.md
+- **Learned**: Tool use loop de Claude permite encadenar multiples WP-CLI commands en una sola conversacion. PWA con manifest.json + meta tags permite instalar como app. WindPress usa wp tailwindcss CLI, Tailwind nativo usa npx tailwindcss.
+
 ### Plan Miércoles 25
 
 - [ ] Post LinkedIn: WordPress 7 + sorpresa WP AI Admin (usar plantilla WP7, cambiar texto)

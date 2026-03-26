@@ -17,7 +17,10 @@ try {
   const envFile = readFileSync(join(__dirname, '.env'), 'utf-8');
   envFile.split('\n').forEach(line => {
     const [key, ...vals] = line.split('=');
-    if (key && vals.length) process.env[key.trim()] = vals.join('=').trim();
+    if (key && vals.length) {
+      const raw = vals.join('=').trim();
+      process.env[key.trim()] = raw.replace(/^(['"])(.*)\1$/, '$2');
+    }
   });
 } catch { /* no .env file */ }
 
@@ -101,6 +104,7 @@ app.post('/api/sites/:id/test', async (req, res) => {
 // ==================== CHAT ====================
 // In-memory conversation store (per session, resets on restart)
 const conversations = {};
+const MAX_CONVERSATIONS = 50;
 
 app.post('/api/chat', async (req, res) => {
   try {
@@ -119,7 +123,11 @@ app.post('/api/chat', async (req, res) => {
     }
 
     // Build messages history
-    if (!conversations[convId]) conversations[convId] = [];
+    if (!conversations[convId]) {
+      const keys = Object.keys(conversations);
+      if (keys.length >= MAX_CONVERSATIONS) delete conversations[keys[0]];
+      conversations[convId] = [];
+    }
     conversations[convId].push({ role: 'user', content: message });
 
     const result = await chat(conversations[convId], activeSite);

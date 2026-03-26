@@ -10,7 +10,7 @@ WP AI Admin is a local web application that lets you manage any WordPress site t
 
 - **Natural language WordPress management** — "list active plugins", "create a draft post about SEO", "do a health check"
 - **29 pre-built WP-CLI tools** + a generic `wp_cli_run` that executes ANY WP-CLI command
-- **13 WordPress Agent Skills** from the [official WordPress repo](https://github.com/WordPress/agent-skills) — auto-loaded by context
+- **14 WordPress Agent Skills** from the [official WordPress repo](https://github.com/WordPress/agent-skills) — auto-loaded by context
 - **21 ready-to-use Workflows** — multi-step recipes: security audit, performance review, DB cleanup, domain migration, WindPress/Tailwind debug, and more
 - **Multi-site management** — add local (MAMP) or remote (SSH) WordPress sites
 - **Command history** — full log of every WP-CLI command executed
@@ -30,18 +30,21 @@ Then open **http://localhost:3848**
 
 ### What `setup.sh` does
 
-1. Checks Node.js ≥ 18 and WP-CLI
-2. Installs dependencies (`npm install`)
-3. Downloads [WordPress Agent Skills](https://github.com/WordPress/agent-skills)
-4. Creates config directory
-5. Optionally sets your Anthropic API key
+1. Checks Node.js ≥ 18
+2. **Detects your environment** (MAMP, Local WP, or remote SSH) and guides WP-CLI installation
+3. Installs dependencies (`npm install`)
+4. Downloads [WordPress Agent Skills](https://github.com/WordPress/agent-skills)
+5. Creates config directory
+6. Optionally sets your Anthropic API key
+
+> If WP-CLI is not found, the installer walks you through it step by step for your specific setup.
 
 ## Requirements
 
-- **Node.js 18+**
-- **WP-CLI** installed and in PATH ([install guide](https://wp-cli.org/#installing))
+- **Node.js 18+** ([download](https://nodejs.org))
 - **Anthropic API key** ([get one here](https://console.anthropic.com/))
 - A WordPress site (local or remote via SSH)
+- **WP-CLI** — `setup.sh` will detect and guide installation if missing
 
 ## Architecture
 
@@ -76,7 +79,7 @@ wp-ai-admin/
 
 ### WordPress Agent Skills (auto-loaded)
 
-The app includes all 13 official skills from [WordPress/agent-skills](https://github.com/WordPress/agent-skills):
+The app includes all 14 official skills from [WordPress/agent-skills](https://github.com/WordPress/agent-skills):
 
 | Skill | Loaded when... |
 |---|---|

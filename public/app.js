@@ -83,13 +83,13 @@ function renderSitesList() {
   list.innerHTML = state.sites.map(s => `
     <div class="site-card ${s.active ? 'active-site' : ''}">
       <div>
-        <div class="text-sm font-medium">${s.name}</div>
-        <div class="text-xs text-text-muted mt-0.5">${s.type === 'remote' ? `${s.ssh_user}@${s.ssh_host}:` : ''}${s.path}</div>
+        <div class="text-sm font-medium">${escapeHtml(s.name)}</div>
+        <div class="text-xs text-text-muted mt-0.5">${s.type === 'remote' ? `${escapeHtml(s.ssh_user)}@${escapeHtml(s.ssh_host)}:` : ''}${escapeHtml(s.path)}</div>
       </div>
       <div class="flex items-center gap-2">
-        <button onclick="testSite('${s.id}')" class="text-xs text-text-muted hover:text-text-primary px-2 py-1 rounded hover:bg-white/5" title="Test conexion">Test</button>
-        ${!s.active ? `<button onclick="activateSite('${s.id}')" class="text-xs text-accent hover:text-accent/80 px-2 py-1 rounded hover:bg-white/5">Activar</button>` : '<span class="text-xs text-success">Activo</span>'}
-        <button onclick="deleteSite('${s.id}')" class="text-xs text-danger/60 hover:text-danger px-2 py-1 rounded hover:bg-white/5">Borrar</button>
+        <button onclick="testSite('${escapeHtml(s.id)}')" class="text-xs text-text-muted hover:text-text-primary px-2 py-1 rounded hover:bg-white/5" title="Test conexion">Test</button>
+        ${!s.active ? `<button onclick="activateSite('${escapeHtml(s.id)}')" class="text-xs text-accent hover:text-accent/80 px-2 py-1 rounded hover:bg-white/5">Activar</button>` : '<span class="text-xs text-success">Activo</span>'}
+        <button onclick="deleteSite('${escapeHtml(s.id)}')" class="text-xs text-danger/60 hover:text-danger px-2 py-1 rounded hover:bg-white/5">Borrar</button>
       </div>
     </div>
   `).join('');
@@ -160,7 +160,10 @@ async function testSite(id) {
     } else {
       btn.textContent = 'Error';
       btn.className = btn.className.replace('text-text-muted', 'text-danger');
-      alert(`Conexion fallida: ${data.error}`);
+      const msg = data.error?.includes('no esta instalado') || data.error?.includes('command not found')
+        ? `WP-CLI no detectado.\n\nInstala con:\n  brew install wp-cli (macOS)\n  o visita https://wp-cli.org\n\nSi usas MAMP, añade en wp-config.php:\n  define('DB_HOST', 'localhost:/Applications/MAMP/tmp/mysql/mysql.sock');`
+        : `Conexion fallida: ${data.error}`;
+      alert(msg);
     }
   } catch {
     btn.textContent = 'Error';
@@ -331,18 +334,18 @@ function renderSkillsGrid(skills) {
     return;
   }
   grid.innerHTML = skills.map(s => `
-    <div class="skill-card" onclick="runSkill('${s.id}')">
-      <span class="skill-icon">${s.icon}</span>
+    <div class="skill-card" onclick="runSkill('${escapeHtml(s.id)}')">
+      <span class="skill-icon">${escapeHtml(s.icon)}</span>
       <div class="flex-1 min-w-0">
-        <div class="skill-name">${s.name}</div>
-        <div class="skill-desc">${s.description}</div>
-        <span class="skill-cat">${s.category}</span>
+        <div class="skill-name">${escapeHtml(s.name)}</div>
+        <div class="skill-desc">${escapeHtml(s.description)}</div>
+        <span class="skill-cat">${escapeHtml(s.category)}</span>
       </div>
       <div class="skill-actions" onclick="event.stopPropagation()">
-        <button onclick="editSkill('${s.id}')" class="text-text-muted hover:text-text-primary p-1 rounded transition-colors" title="Editar">
+        <button onclick="editSkill('${escapeHtml(s.id)}')" class="text-text-muted hover:text-text-primary p-1 rounded transition-colors" title="Editar">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z"/></svg>
         </button>
-        <button onclick="deleteSkill('${s.id}')" class="text-text-muted hover:text-danger p-1 rounded transition-colors" title="Eliminar">
+        <button onclick="deleteSkill('${escapeHtml(s.id)}')" class="text-text-muted hover:text-danger p-1 rounded transition-colors" title="Eliminar">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
         </button>
       </div>
@@ -372,7 +375,7 @@ function renderSidebarSkills(skills) {
   const top = skills.slice(0, 4);
   container.innerHTML = `
     <p class="text-[10px] text-text-muted uppercase tracking-widest font-medium px-3 mb-1.5">Workflows</p>
-    ${top.map(s => `<button onclick="runSkill('${s.id}')" class="w-full text-left px-3 py-1.5 rounded-lg text-[12px] text-text-muted hover:text-amber-400 transition-colors flex items-center gap-2"><span>${s.icon}</span> ${s.name}</button>`).join('')}
+    ${top.map(s => `<button onclick="runSkill('${escapeHtml(s.id)}')" class="w-full text-left px-3 py-1.5 rounded-lg text-[12px] text-text-muted hover:text-amber-400 transition-colors flex items-center gap-2"><span>${escapeHtml(s.icon)}</span> ${escapeHtml(s.name)}</button>`).join('')}
     ${skills.length > 4 ? `<button onclick="showView('workflows')" class="w-full text-left px-3 py-1.5 rounded-lg text-[11px] text-amber-500/60 hover:text-amber-400 transition-colors">Ver todos (${skills.length})...</button>` : ''}
   `;
 }
@@ -461,17 +464,18 @@ function escapeHtml(str) {
 }
 
 function formatMarkdown(text) {
-  return text
+  const escaped = escapeHtml(text);
+  return escaped
     .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre class="bg-[#0f1118] rounded-lg p-3 my-2 overflow-x-auto text-xs"><code>$2</code></pre>')
     .replace(/`([^`]+)`/g, '<code class="bg-white/10 px-1 py-0.5 rounded text-xs">$1</code>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\n/g, '<br>');
 }
 
-// Keyboard shortcut: Enter to send
+// Keyboard shortcut: Enter to send (prevent double-submit — form onsubmit handles execution)
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey && document.activeElement.id === 'chat-input') {
-    sendMessage(e);
+    e.preventDefault();
   }
 });
 

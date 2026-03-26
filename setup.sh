@@ -39,8 +39,56 @@ if command -v wp &> /dev/null; then
     WP_VERSION=$(wp --version 2>/dev/null || echo "unknown")
     echo -e "${GREEN}✓${NC} WP-CLI $WP_VERSION"
 else
-    echo -e "${AMBER}⚠ WP-CLI not found. Install: https://wp-cli.org/#installing${NC}"
-    echo -e "${DIM}  The app will work but WP-CLI commands will fail until installed.${NC}"
+    echo -e "${AMBER}⚠ WP-CLI not found locally.${NC}"
+    echo ""
+    if [ -t 0 ]; then
+        echo -e "  ${BOLD}Where is your WordPress?${NC}"
+        echo -e "  ${DIM}1)${NC} Local — MAMP / MAMP Pro"
+        echo -e "  ${DIM}2)${NC} Local — Local WP (Flywheel)"
+        echo -e "  ${DIM}3)${NC} Remote server (SSH access)"
+        echo -e "  ${DIM}4)${NC} Skip — I'll set it up later"
+        echo ""
+        read -p "  Choose [1-4]: " WP_ENV
+
+        case $WP_ENV in
+            1)
+                echo ""
+                echo -e "  ${BOLD}Installing WP-CLI...${NC}"
+                curl -sO https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+                chmod +x wp-cli.phar
+                sudo mv wp-cli.phar /usr/local/bin/wp 2>/dev/null || {
+                    mkdir -p "$HOME/.local/bin"
+                    mv wp-cli.phar "$HOME/.local/bin/wp"
+                    echo -e "  ${DIM}Installed to ~/.local/bin/wp (add to PATH if needed)${NC}"
+                }
+                if command -v wp &> /dev/null; then
+                    echo -e "  ${GREEN}✓${NC} WP-CLI installed: $(wp --version 2>/dev/null)"
+                else
+                    echo -e "  ${GREEN}✓${NC} WP-CLI downloaded. Run: export PATH=\"\$HOME/.local/bin:\$PATH\""
+                fi
+                echo ""
+                echo -e "  ${AMBER}Tip MAMP:${NC} si wp da error de DB, añade en wp-config.php:"
+                echo -e "  ${DIM}define('DB_HOST', 'localhost:/Applications/MAMP/tmp/mysql/mysql.sock');${NC}"
+                ;;
+            2)
+                echo ""
+                echo -e "  ${GREEN}✓${NC} Local WP ya incluye WP-CLI."
+                echo -e "  ${DIM}Abre tu sitio en Local → 'Open Site Shell' → wp ya funciona.${NC}"
+                echo -e "  ${DIM}En WP AI Admin, añade el sitio con la ruta que Local te muestra.${NC}"
+                ;;
+            3)
+                echo ""
+                echo -e "  ${GREEN}✓${NC} WP-CLI no es necesario en local para servidores remotos."
+                echo -e "  ${DIM}La app se conectara via SSH y usara el WP-CLI del servidor.${NC}"
+                echo -e "  ${DIM}En Settings, añade tu sitio con: host, usuario SSH y ruta al WordPress.${NC}"
+                ;;
+            *)
+                echo -e "  ${DIM}OK — puedes configurar WP-CLI mas tarde.${NC}"
+                ;;
+        esac
+    else
+        echo -e "  ${DIM}Install WP-CLI: https://wp-cli.org/#installing${NC}"
+    fi
 fi
 
 # 3. Install dependencies
@@ -66,7 +114,9 @@ fi
 if [ ! -f ".env" ]; then
     echo -e "${AMBER}⚠ No .env file found.${NC}"
     echo ""
-    read -p "  Enter your Anthropic API key (or press Enter to skip): " API_KEY
+    if [ -t 0 ]; then
+        read -p "  Enter your Anthropic API key (or press Enter to skip): " API_KEY
+    fi
     if [ -n "$API_KEY" ]; then
         echo "ANTHROPIC_API_KEY=$API_KEY" > .env
         echo -e "${GREEN}✓${NC} API key saved to .env"
