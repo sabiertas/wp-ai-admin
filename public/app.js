@@ -497,11 +497,60 @@ function escapeHtml(str) {
 
 function formatMarkdown(text) {
   const escaped = escapeHtml(text);
-  return escaped
+
+  // Parse markdown tables into HTML tables
+  const lines = escaped.split('\n');
+  const result = [];
+  let tableRows = [];
+  let inTable = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    // Detect table row: starts and ends with | or has multiple |
+    if (line.match(/^\|(.+)\|$/)) {
+      // Skip separator rows (|---|---|)
+      if (line.match(/^\|[\s\-:]+\|$/)) continue;
+      const cells = line.split('|').filter((_, idx, arr) => idx > 0 && idx < arr.length - 1).map(c => c.trim());
+      tableRows.push(cells);
+      inTable = true;
+    } else {
+      if (inTable && tableRows.length > 0) {
+        result.push(renderTable(tableRows));
+        tableRows = [];
+        inTable = false;
+      }
+      result.push(line);
+    }
+  }
+  if (tableRows.length > 0) result.push(renderTable(tableRows));
+
+  return result.join('\n')
     .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre class="bg-[#0f1118] rounded-lg p-3 my-2 overflow-x-auto text-xs"><code>$2</code></pre>')
     .replace(/`([^`]+)`/g, '<code class="bg-white/10 px-1 py-0.5 rounded text-xs">$1</code>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\n/g, '<br>');
+}
+
+function renderTable(rows) {
+  if (rows.length === 0) return '';
+  const header = rows[0];
+  const body = rows.slice(1);
+  let html = '<table class="w-full my-3 text-xs border-collapse">';
+  html += '<thead><tr>';
+  header.forEach(h => {
+    html += `<th class="text-left px-3 py-2 bg-white/5 border-b border-white/10 text-amber-400 font-medium">${h}</th>`;
+  });
+  html += '</tr></thead><tbody>';
+  body.forEach((row, i) => {
+    const bg = i % 2 === 0 ? '' : ' bg-white/[0.02]';
+    html += `<tr class="${bg}">`;
+    row.forEach(cell => {
+      html += `<td class="px-3 py-1.5 border-b border-white/5 font-[ui-monospace,monospace]">${cell}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  return html;
 }
 
 // Keyboard shortcut: Enter to send
