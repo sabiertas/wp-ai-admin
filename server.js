@@ -34,7 +34,7 @@ if (process.env.ANTHROPIC_API_KEY) {
 
 const app = express();
 app.use(express.json({ limit: '5mb' }));
-app.use(express.static(join(__dirname, 'public')));
+app.use(express.static(join(__dirname, 'public'), { etag: false, maxAge: 0 }));
 
 // ==================== SITES ====================
 function readSites() {

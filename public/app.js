@@ -276,13 +276,22 @@ function appendMessage(role, html) {
   return div;
 }
 
+function filterPhpNoise(text) {
+  return text.split('\n').filter(line =>
+    !line.match(/^(PHP )?(Deprecated|Warning|Notice|Parse error|Fatal error):/i) &&
+    !line.includes('phar://') &&
+    !line.includes("eval()'d code")
+  ).join('\n').trim();
+}
+
 function appendToolCall(tool) {
   const msgs = document.getElementById('messages');
   const div = document.createElement('div');
   div.className = 'msg-tool';
 
-  const output = typeof tool.output === 'object' ? JSON.stringify(tool.output, null, 2) : String(tool.output || '');
-  const truncated = output.length > 500 ? output.slice(0, 500) + '\n... (truncated)' : output;
+  let raw = typeof tool.output === 'object' ? JSON.stringify(tool.output, null, 2) : String(tool.output || '');
+  raw = filterPhpNoise(raw);
+  const truncated = raw.length > 500 ? raw.slice(0, 500) + '\n... (truncated)' : raw;
 
   div.innerHTML = `
     <div class="tool-name">${tool.name}</div>
