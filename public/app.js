@@ -230,11 +230,15 @@ async function sendMessage(e) {
   } catch { /* non-critical */ }
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 min for heavy workflows
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message })
+      body: JSON.stringify({ message }),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
 
     const data = await res.json();
     thinkingEl.remove();
@@ -251,7 +255,10 @@ async function sendMessage(e) {
     }
   } catch (err) {
     thinkingEl.remove();
-    appendMessage('assistant', `<span class="text-danger">Error: ${err.message}</span>`);
+    const errMsg = err.name === 'AbortError'
+      ? 'La operacion tardo demasiado. Intenta con una pregunta mas concreta.'
+      : `Error: ${err.message}`;
+    appendMessage('assistant', `<span class="text-danger">${errMsg}</span>`);
   }
 
   state.loading = false;

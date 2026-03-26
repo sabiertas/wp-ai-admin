@@ -130,6 +130,10 @@ const conversations = {};
 const MAX_CONVERSATIONS = 50;
 
 app.post('/api/chat', async (req, res) => {
+  // Workflows can chain many tool calls — allow up to 5 min
+  req.setTimeout(300000);
+  res.setTimeout(300000);
+
   try {
     if (!isConnected()) {
       return res.status(400).json({ error: 'Claude API not connected. Set your API key in Settings.' });
