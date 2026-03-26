@@ -508,8 +508,8 @@ function formatMarkdown(text) {
     const line = lines[i].trim();
     // Detect table row: starts and ends with | or has multiple |
     if (line.match(/^\|(.+)\|$/)) {
-      // Skip separator rows (|---|---|)
-      if (line.match(/^\|[\s\-:]+\|$/)) continue;
+      // Skip separator rows (|---|---|---| etc)
+      if (line.match(/^\|[\s\-:|]+$/)) continue;
       const cells = line.split('|').filter((_, idx, arr) => idx > 0 && idx < arr.length - 1).map(c => c.trim());
       tableRows.push(cells);
       inTable = true;
