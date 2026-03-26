@@ -1,6 +1,6 @@
 {
   "name": "wp-ai-admin",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Local app to manage WordPress sites via Claude AI + WP-CLI",

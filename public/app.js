@@ -116,6 +116,7 @@ function renderSitesList() {
       <div class="flex items-center gap-2 shrink-0">
         <button onclick="testSite('${escapeHtml(s.id)}')" class="text-xs text-text-muted hover:text-text-primary px-2 py-1 rounded hover:bg-white/5" title="Test conexion">Test</button>
         ${s.url ? `<button onclick="discoverMcp('${escapeHtml(s.id)}')" class="text-xs text-emerald-500/70 hover:text-emerald-400 px-2 py-1 rounded hover:bg-white/5" title="Discover MCP">MCP</button>` : ''}
+        <button onclick="editSite('${escapeHtml(s.id)}')" class="text-xs text-amber-500/70 hover:text-amber-400 px-2 py-1 rounded hover:bg-white/5" title="Editar">Editar</button>
         ${!s.active ? `<button onclick="activateSite('${escapeHtml(s.id)}')" class="text-xs text-accent hover:text-accent/80 px-2 py-1 rounded hover:bg-white/5">Activar</button>` : '<span class="text-xs text-success">Activo</span>'}
         <button onclick="deleteSite('${escapeHtml(s.id)}')" class="text-xs text-danger/60 hover:text-danger px-2 py-1 rounded hover:bg-white/5">Borrar</button>
       </div>
@@ -128,6 +129,7 @@ function showAddSite() {
 }
 
 function hideAddSite() {
+  editingSiteId = null;
   document.getElementById('add-site-form').classList.add('hidden');
   document.getElementById('new-site-name').value = '';
   document.getElementById('new-site-path').value = '';
@@ -136,6 +138,7 @@ function hideAddSite() {
   document.getElementById('new-site-wp-app-password').value = '';
   document.getElementById('new-site-ssh-host').value = '';
   document.getElementById('new-site-ssh-user').value = '';
+  if (document.getElementById('new-site-ssh-password')) document.getElementById('new-site-ssh-password').value = '';
 }
 
 function setupTypeToggle() {
@@ -181,13 +184,42 @@ async function addSite() {
     wp_user: document.getElementById('new-site-wp-user').value,
     wp_app_password: document.getElementById('new-site-wp-app-password').value,
     ssh_host: document.getElementById('new-site-ssh-host').value,
-    ssh_user: document.getElementById('new-site-ssh-user').value
+    ssh_user: document.getElementById('new-site-ssh-user').value,
+    ssh_password: document.getElementById('new-site-ssh-password')?.value || ''
   };
   if (!body.name || !body.path) return alert('Nombre y path son obligatorios');
-  await fetch('/api/sites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+
+  if (editingSiteId) {
+    // Update existing site
+    await fetch(`/api/sites/${editingSiteId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    editingSiteId = null;
+  } else {
+    // Create new site
+    await fetch('/api/sites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  }
   hideAddSite();
   await loadSites();
   await refreshStatus();
+}
+
+let editingSiteId = null;
+
+function editSite(id) {
+  const site = state.sites.find(s => s.id === id);
+  if (!site) return;
+  editingSiteId = id;
+  document.getElementById('add-site-form').classList.remove('hidden');
+  document.getElementById('new-site-name').value = site.name || '';
+  document.getElementById('new-site-type').value = site.type || 'local';
+  document.getElementById('new-site-path').value = site.path || '';
+  document.getElementById('new-site-url').value = site.url || '';
+  document.getElementById('new-site-wp-user').value = site.wp_user || '';
+  document.getElementById('new-site-wp-app-password').value = site.wp_app_password || '';
+  document.getElementById('new-site-ssh-host').value = site.ssh_host || '';
+  document.getElementById('new-site-ssh-user').value = site.ssh_user || '';
+  if (document.getElementById('new-site-ssh-password')) document.getElementById('new-site-ssh-password').value = site.ssh_password || '';
+  // Show/hide SSH fields
+  document.getElementById('ssh-fields').classList.toggle('hidden', site.type !== 'remote');
 }
 
 async function activateSite(id) {

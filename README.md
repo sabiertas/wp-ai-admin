@@ -59,6 +59,8 @@ Tu configuracion (API key y sitios) se conserva al actualizar.
 
 - **Gestion WordPress en lenguaje natural** — "lista los plugins activos", "crea un borrador sobre SEO", "haz un audit de seguridad"
 - **29 herramientas WP-CLI** + `wp_cli_run` generico que ejecuta CUALQUIER comando WP-CLI
+- **MCP Auto-Discovery** — detecta y conecta automaticamente servidores MCP en tus sitios WordPress (JetEngine, y mas por venir)
+- **Contexto inteligente** — carga automaticamente la configuracion del sitio (CPTs, taxonomias, meta boxes, queries) para que la IA sepa que existe antes de actuar
 - **14 WordPress Agent Skills** del [repositorio oficial de WordPress](https://github.com/WordPress/agent-skills) — se cargan automaticamente segun contexto
 - **21 Workflows listos para usar** — recetas multi-paso: audit de seguridad, revision de rendimiento, limpieza de BD, migracion de dominio, debug WindPress/Tailwind, y mas
 - **Multi-sitio** — añade sitios locales (MAMP) o remotos (SSH)
@@ -93,7 +95,8 @@ wp-ai-admin/
 │   ├── claude.js          # Cliente Claude API con tool_use
 │   ├── tools.js           # 29 definiciones de herramientas WP-CLI
 │   ├── wp-cli.js          # Ejecutor de comandos (local + SSH)
-│   └── wp-skills.js       # Cargador dinamico de WordPress/agent-skills
+│   ├── wp-skills.js       # Cargador dinamico de WordPress/agent-skills
+│   └── mcp-proxy.js       # MCP auto-discovery, JSON-RPC proxy y contexto
 ├── public/
 │   ├── index.html         # UI (Tailwind v4 + paleta amber)
 │   ├── app.js             # Logica frontend
@@ -110,10 +113,25 @@ wp-ai-admin/
 
 1. Escribes un mensaje en el chat
 2. El sistema identifica los WordPress Agent Skills relevantes analizando tu mensaje
-3. Los skills se inyectan en el prompt de Claude como contexto experto
-4. Claude decide que herramientas WP-CLI ejecutar
-5. Los comandos se ejecutan en el sitio WordPress activo
-6. Los resultados se muestran en el chat junto con los comandos ejecutados
+3. Si el sitio tiene MCP providers (ej: JetEngine), se carga automaticamente el contexto del sitio (CPTs, taxonomias, campos, queries)
+4. Los skills y el contexto MCP se inyectan en el prompt de Claude
+5. Claude decide que herramientas usar: WP-CLI, MCP tools, o ambas
+6. Los comandos se ejecutan en el sitio WordPress activo
+7. Los resultados se muestran en el chat junto con los comandos ejecutados
+
+### Integracion MCP
+
+WP AI Admin detecta automaticamente servidores MCP instalados en tus sitios WordPress. Actualmente soporta:
+
+| Provider | Protocolo | Tools | Contexto auto |
+|----------|-----------|-------|---------------|
+| **JetEngine** | JSON-RPC via REST | CPTs, taxonomias, meta boxes, CCTs, glossaries, queries, listings | Si — carga config completa del sitio |
+
+Cuando conectas un sitio con JetEngine MCP activado:
+- Se descubren las tools disponibles automaticamente
+- Se carga el contexto del sitio (que CPTs existen, que campos tienen, etc.)
+- Claude puede crear, consultar y modificar estructuras de JetEngine via MCP
+- El cache se invalida automaticamente al crear nuevos elementos
 
 ## Stack tecnico
 

@@ -1,3 +1,6 @@
+// Allow self-signed SSL certs (MAMP, local dev sites)
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 import express from 'express';
 import { readFileSync, writeFileSync, existsSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
@@ -5,7 +8,7 @@ import { fileURLToPath } from 'url';
 import { initClient, isConnected, chat } from './lib/claude.js';
 import { testConnection } from './lib/wp-cli.js';
 import { matchSkills, listAvailableSkills } from './lib/wp-skills.js';
-import { discoverMcp, getMcpSummary } from './lib/mcp-proxy.js';
+import { discoverMcp, getMcpSummary, fetchJetEngineContext, invalidateContextCache } from './lib/mcp-proxy.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SITES_PATH = join(__dirname, 'config', 'sites.json');
@@ -67,6 +70,7 @@ app.post('/api/sites', (req, res) => {
     wp_app_password: req.body.wp_app_password || '',
     ssh_host: req.body.ssh_host || '',
     ssh_user: req.body.ssh_user || '',
+    ssh_password: req.body.ssh_password || '',
     active: data.sites.length === 0 // first site is active by default
   };
   data.sites.push(site);
@@ -132,6 +136,36 @@ app.post('/api/sites/:id/mcp-discover', async (req, res) => {
     site.mcp = mcp;
     writeSites(data);
     res.json({ ok: true, mcp: getMcpSummary(site) });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ==================== MCP CONTEXT ====================
+// Fetch JetEngine context for the active site (or refresh it)
+app.get('/api/mcp-context', async (req, res) => {
+  const sitesData = readSites();
+  const activeSite = sitesData.sites.find(s => s.active);
+  if (!activeSite) return res.status(400).json({ error: 'No active site' });
+
+  try {
+    const context = await fetchJetEngineContext(activeSite);
+    if (!context) return res.json({ available: false, message: 'JetEngine MCP not available on this site' });
+    res.json({ available: true, context });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/mcp-context/refresh', async (req, res) => {
+  const sitesData = readSites();
+  const activeSite = sitesData.sites.find(s => s.active);
+  if (!activeSite) return res.status(400).json({ error: 'No active site' });
+
+  invalidateContextCache(activeSite.id);
+  try {
+    const context = await fetchJetEngineContext(activeSite);
+    res.json({ ok: true, available: !!context, context });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
