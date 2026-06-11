@@ -1,0 +1,72 @@
+{
+  "version": "2026-06-11.v0",
+  "generated_by": "komandesk-agent-kit",
+  "source_of_truth": {
+    "system": "komandesk",
+    "task_state": "remote",
+    "local_files_role": "bootstrap-and-project-context"
+  },
+  "komandesk": {
+    "base_url": "https://ops.solucionesabiertas.net",
+    "project_id": "",
+    "required_endpoints": [
+      "GET /api/tasks/:id",
+      "GET /api/tasks/:id/agent-work",
+      "POST /api/tasks/:id/time",
+      "POST /api/tasks/:id/context",
+      "POST /api/tasks/:id/comments",
+      "PATCH /api/tasks/:id/status"
+    ],
+    "workspace_id": "1"
+  },
+  "project": {
+    "name": "wp-ai-admin",
+    "slug": "wp-ai-admin",
+    "type": "node-app",
+    "repository": "github.com/sabiertas/wp-ai-admin",
+    "production": "",
+    "portable_root": "workspace-project:wp-ai-admin",
+    "local_path": {
+      "kind": "runner-local",
+      "ref": "project.local_path"
+    },
+    "path_aliases": [
+      "workspace-project:wp-ai-admin",
+      "repo:github.com/sabiertas/wp-ai-admin"
+    ]
+  },
+  "workspace": {
+    "mode": "workspace-managed",
+    "ref": "workspace:sa-workspace",
+    "registry": "workspace registry optional; local kit remains authoritative for this repo"
+  },
+  "overlays": [
+    {
+      "ref": "overlay:soluciones-abiertas",
+      "role": "optional customization outside Komandesk Agent Kit core"
+    }
+  ],
+  "read_first": [
+    "AGENTS.md",
+    "state.md",
+    "docs/komandesk-agent-kit.md"
+  ],
+  "skills": [
+    "github:yeet"
+  ],
+  "mcp_servers": [],
+  "credentials": [],
+  "commands": {
+    "doctor": "",
+    "test": "",
+    "verify": "",
+    "migrate": "",
+    "start": "npm start"
+  },
+  "write_rules": [
+    "Crear o usar una work-item en Komandesk antes de tocar el proyecto.",
+    "Registrar tiempo y evidencia visible.",
+    "No desplegar, borrar datos ni tocar credenciales sin Human Gate.",
+    "Leer GET /api/tasks/:id/agent-work antes de proponer cierre."
+  ]
+}

@@ -46,3 +46,16 @@ npm start      # Produccion
 ## Git Workflow
 
 Ramas: main (proyecto simple, deadline jueves 27)
+
+<!-- KOMANDESK:AGENT_KIT:START version=2026-06-11.v0 hash=c20b8666776f3d2de027ad6fe13edf077413512bf8df1940b0903016c41efe23 -->
+## Komandesk Agent Kit
+
+- Version: 2026-06-11.v0
+- Project: wp-ai-admin
+- Type: node-app
+- Source of truth: Komandesk (https://ops.solucionesabiertas.net).
+- Read first: `docs/komandesk-agent-kit.md`, `state.md` si existe.
+- Local kit role: bootstrap instructions, commands, skills, credentials references and project context.
+- Credentials: references only; never print or commit secret values.
+- Before closing: read `GET /api/tasks/:id/agent-work`.
+<!-- KOMANDESK:AGENT_KIT:END -->
